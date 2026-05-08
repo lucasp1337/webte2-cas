@@ -7,11 +7,5 @@
         "final_class": true,
         "void_return": true
     },
-    "exclude": [
-        "bootstrap/cache",
-        "storage",
-        "vendor",
-        "node_modules",
-        "public/build"
-    ]
+    "exclude": ["bootstrap/cache", "storage", "vendor", "node_modules", "public/build"]
 }
