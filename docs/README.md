@@ -82,6 +82,20 @@ A typical phase loop:
 | 10 | Polish, security, cross-browser, Horizon gate | 1.5 d | any | — |
 | 11 | Documentation, video, submission | 1 d | any | — |
 
+Phase docs:
+[00](phases/phase-00-spec-lock.md) ·
+[01](phases/phase-01-infrastructure.md) ·
+[02](phases/phase-02-octave-bridge.md) ·
+[03](phases/phase-03-auth-api-logging.md) ·
+[04](phases/phase-04-frontend-foundation.md) ·
+[05](phases/phase-05-octave-console.md) ·
+[06](phases/phase-06-inverted-pendulum.md) ·
+[07](phases/phase-07-ball-on-beam.md) ·
+[08](phases/phase-08-openapi-pdf.md) ·
+[09](phases/phase-09-statistics.md) ·
+[10](phases/phase-10-polish.md) ·
+[11](phases/phase-11-docs-video.md)
+
 **Total**: ~16–20 working days. Parallel agents shrink this materially.
 
 ### Suggested parallelisation

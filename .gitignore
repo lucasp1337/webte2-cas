@@ -1,6 +1,9 @@
 # Phase coordinator working files
 docs/phases/.work/
 
+# Claude Code local settings (agents/ and commands/ are committed; settings.local.json is per-machine)
+.claude/settings.local.json
+
 # Editor / OS
 .idea/
 .vscode/
