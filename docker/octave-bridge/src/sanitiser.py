@@ -1,0 +1,75 @@
+"""Command sanitiser for the Octave bridge.
+
+Octave block comments (%{ ... %}) and line comments (% ...) are stripped
+before scanning, so forbidden tokens that appear only inside comments are
+allowed — Octave never executes comment text.
+
+This is defence in depth: the container sandbox is the primary control; the
+blocklist provides a clear and helpful early error before Octave is even
+spawned.
+"""
+
+from __future__ import annotations
+
+import re
+
+from .errors import CommandRejected
+
+# Each entry is (human_readable_name, compiled_pattern).
+# Patterns use \\b word boundaries so substrings inside identifiers are not
+# flagged (e.g. 'socketsxyz' does not trigger the 'socket' rule — wait, socket
+# is not in the phase-doc list; 'mysavedvar' does not trigger 'save').
+FORBIDDEN_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("system", re.compile(r"\bsystem\b", re.IGNORECASE)),
+    ("unix", re.compile(r"\bunix\b", re.IGNORECASE)),
+    ("dos", re.compile(r"\bdos\b", re.IGNORECASE)),
+    ("popen", re.compile(r"\bpopen\b", re.IGNORECASE)),
+    ("eval", re.compile(r"\beval\b", re.IGNORECASE)),
+    ("exec", re.compile(r"\bexec\b", re.IGNORECASE)),
+    ("source", re.compile(r"\bsource\b", re.IGNORECASE)),
+    ("mkfifo", re.compile(r"\bmkfifo\b", re.IGNORECASE)),
+    ("fopen", re.compile(r"\bfopen\b", re.IGNORECASE)),
+    ("fclose", re.compile(r"\bfclose\b", re.IGNORECASE)),
+    ("fwrite", re.compile(r"\bfwrite\b", re.IGNORECASE)),
+    ("load", re.compile(r"\bload\b", re.IGNORECASE)),
+    ("save", re.compile(r"\bsave\b", re.IGNORECASE)),
+    ("__octave_config_info__", re.compile(r"\b__octave_config_info__\b", re.IGNORECASE)),
+    ("addpath", re.compile(r"\baddpath\b", re.IGNORECASE)),
+    ("rmpath", re.compile(r"\brmpath\b", re.IGNORECASE)),
+    ("shell escape (!)", re.compile(r"!")),
+)
+
+# Block-comment pattern: %{ ... %} (non-greedy, dotall so it spans lines).
+_BLOCK_COMMENT_RE = re.compile(r"%\{.*?%\}", re.DOTALL)
+# Line-comment pattern: % to end of line (but not inside a string — best-effort).
+_LINE_COMMENT_RE = re.compile(r"%[^\n]*")
+
+
+def _strip_comments(command: str) -> str:
+    """Remove Octave comments so forbidden tokens in comments are not flagged."""
+    without_block = _BLOCK_COMMENT_RE.sub("", command)
+    return _LINE_COMMENT_RE.sub("", without_block)
+
+
+def sanitise(command: str, *, max_length: int) -> None:
+    """Validate *command* against length and forbidden-token rules.
+
+    Raises :class:`~errors.CommandRejected` with a descriptive reason on the
+    first violation found.  Returns ``None`` on success.
+
+    Args:
+        command: The raw Octave command string submitted by the user.
+        max_length: Maximum allowed byte length.  Commands exceeding this are
+            rejected before pattern scanning.
+    """
+    if len(command) == 0:
+        raise CommandRejected("length: command must not be empty")
+
+    if len(command) > max_length:
+        raise CommandRejected(f"length: {len(command)}/{max_length}")
+
+    scannable = _strip_comments(command)
+
+    for human_name, pattern in FORBIDDEN_PATTERNS:
+        if pattern.search(scannable):
+            raise CommandRejected(f"forbidden token: {human_name}")
