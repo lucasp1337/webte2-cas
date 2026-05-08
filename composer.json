@@ -42,6 +42,11 @@
         }
     },
     "scripts": {
+        "qa": [
+            "@php vendor/bin/pint --test",
+            "@php vendor/bin/phpstan analyse --no-progress",
+            "@php vendor/bin/pest --parallel"
+        ],
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
