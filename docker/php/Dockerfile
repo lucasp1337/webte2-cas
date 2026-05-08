@@ -1,19 +1,21 @@
 # syntax=docker/dockerfile:1.7
 
 # --- base: shared between web and cli ---
-FROM php:8.5-fpm-alpine AS base
+# Using bookworm (Debian). php:8.5-fpm-bookworm is the stable fallback per phase-01 Risks.
+# opcache is bundled in the base image; only docker-php-ext-enable is needed.
+FROM php:8.5-fpm-bookworm AS base
 
-RUN apk add --no-cache \
-      git zip unzip libpng-dev oniguruma-dev libxml2-dev icu-dev libzip-dev \
-      mysql-client autoconf g++ make linux-headers \
- && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd intl opcache zip \
- && pecl install redis \
- && docker-php-ext-enable redis \
- && apk del autoconf g++ make linux-headers \
- && rm -rf /tmp/pear
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git zip unzip libpng-dev libonig-dev libxml2-dev libicu-dev libzip-dev \
+      default-mysql-client \
+ && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd intl zip \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN apk add --no-cache nodejs npm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      nodejs npm \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
