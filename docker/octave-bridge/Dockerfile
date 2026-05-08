@@ -15,8 +15,10 @@ RUN uv sync --no-dev || true
 
 COPY src /app/src
 
-RUN mkdir -p /var/octave/sessions \
- && chown -R nobody:nogroup /var/octave /app
+RUN mkdir -p /var/octave/sessions /tmp/uv-cache \
+ && chown -R nobody:nogroup /var/octave /app /tmp/uv-cache
+
+ENV UV_CACHE_DIR=/tmp/uv-cache
 
 USER nobody
 EXPOSE 8001
