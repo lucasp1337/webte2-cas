@@ -18,6 +18,10 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
  // ->use(RefreshDatabase::class)
+    ->beforeEach(function (): void {
+        // Tests run without a built Vite manifest (CI doesn't `npm run build`).
+        $this->withoutVite();
+    })
     ->in('Feature');
 
 /*
