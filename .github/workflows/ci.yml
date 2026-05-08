@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php-quality:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:9.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: webte2_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=3s
+          --health-retries=5
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: webte2_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_CLIENT: predis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, mbstring, intl, bcmath, gd, zip, exif, pcntl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+
+      - run: cp .env.example .env
+
+      - run: php artisan key:generate
+
+      - run: vendor/bin/pint --test
+
+      - run: vendor/bin/phpstan analyse --no-progress
+
+      - run: vendor/bin/pest --parallel
+
+  js-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run qa
+
+  python-quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docker/octave-bridge
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - run: uv sync
+
+      - run: make qa
