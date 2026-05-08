@@ -27,15 +27,9 @@ logger = logging.getLogger(__name__)
 # payloads with a slightly too-large value are not broken.
 _MAX_TIMEOUT_SECONDS: int = 30
 
-_DEFAULT_TIMEOUT_SECONDS: int = int(
-    os.environ.get("OCTAVE_BRIDGE_TIMEOUT_SECONDS", "10")
-)
-_DEFAULT_IDLE_HOURS: int = int(
-    os.environ.get("OCTAVE_SESSION_IDLE_HOURS", "24")
-)
-_MAX_COMMAND_LENGTH: int = int(
-    os.environ.get("CAS_COMMAND_MAX_LENGTH", "4096")
-)
+_DEFAULT_TIMEOUT_SECONDS: int = int(os.environ.get("OCTAVE_BRIDGE_TIMEOUT_SECONDS", "10"))
+_DEFAULT_IDLE_HOURS: int = int(os.environ.get("OCTAVE_SESSION_IDLE_HOURS", "24"))
+_MAX_COMMAND_LENGTH: int = int(os.environ.get("CAS_COMMAND_MAX_LENGTH", "4096"))
 
 
 def _bad_request(reason: str) -> web.HTTPBadRequest:
@@ -64,7 +58,7 @@ async def _parse_json_body(request: web.Request, *required_fields: str) -> dict[
         if field not in body:
             raise _bad_request(f"missing required field: '{field}'")
 
-    return body  # type: ignore[return-value]
+    return body
 
 
 async def exec_handler(request: web.Request) -> web.Response:
