@@ -1,0 +1,30 @@
+# Phase coordinator working files
+docs/phases/.work/
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Dependencies (placeholders for later phases)
+/vendor/
+/node_modules/
+/public/build/
+/public/hot/
+/storage/*.key
+/storage/logs/*.log
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/app/private/*
+/bootstrap/cache/*.php
+!.gitkeep
