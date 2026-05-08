@@ -1,0 +1,690 @@
+openapi: 3.1.0
+info:
+  title: WEBTE2 CAS API
+  version: 0.1.0
+  description: |
+    REST API for the WEBTE2 CAS web application. Exposes GNU Octave through a
+    sandboxed bridge, plus dynamic-system simulations (inverted pendulum, ball
+    on beam), request logs, statistics, and queued PDF generation of these docs.
+
+    This file is a hand-drafted skeleton committed in Phase 00. Bodies and
+    schemas are deliberately thin — `dedoc/scramble` enriches them in Phase 08.
+    When a route changes, this file MUST change in the same PR.
+  contact:
+    name: WEBTE2 maintainers
+servers:
+  - url: http://localhost
+    description: Local Docker Compose stack
+  - url: https://webte2.example.com
+    description: Production
+tags:
+  - name: octave
+    description: Octave console (REPL with persistent workspace).
+  - name: simulations
+    description: Dynamic-system simulations.
+  - name: logs
+    description: Request log access and CSV export.
+  - name: api-docs
+    description: OpenAPI documentation rendering and queued PDF generation.
+  - name: stats
+    description: Anonymous animation usage statistics.
+  - name: ops
+    description: Operational endpoints.
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/v1/octave/exec:
+    post:
+      tags: [octave]
+      operationId: octaveExec
+      summary: Execute an Octave command in the caller's session.
+      description: Runs the command against the caller's persistent workspace. Workspace is keyed by API key and idle-pruned daily.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OctaveExecRequest" }
+            example:
+              command: "x = linspace(0, 2*pi, 100); plot(x, sin(x))"
+      responses:
+        "200":
+          description: Command executed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OctaveExecResponse" }
+              example:
+                request_id: "01J9V0Z7C8KQX5HXR8M5H3PMSE"
+                stdout: "ans = 1.0000\n"
+                stderr: ""
+                duration_ms: 42
+                figures: []
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/BridgeUnavailable" }
+
+  /api/v1/octave/session:
+    delete:
+      tags: [octave]
+      operationId: octaveSessionReset
+      summary: Reset the caller's Octave workspace.
+      description: Drops the persisted `.mat` snapshot. Next `exec` starts from a clean workspace.
+      responses:
+        "200":
+          description: Session cleared.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string, format: ulid }
+                  cleared: { type: boolean }
+              example:
+                request_id: "01J9V0ZA1ZP9V3N0B6XQ5KQEMD"
+                cleared: true
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/BridgeUnavailable" }
+
+  /api/v1/simulations/pendulum:
+    post:
+      tags: [simulations]
+      operationId: simulatePendulum
+      summary: Run an inverted-pendulum simulation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PendulumRequest" }
+            example:
+              parameters:
+                cart_mass: 1.0
+                pendulum_mass: 0.2
+                length: 0.5
+                gravity: 9.81
+                friction: 0.1
+                initial_angle: 0.15
+                duration_seconds: 10.0
+                step_size: 0.02
+              control:
+                kind: "lqr"
+      responses:
+        "200":
+          description: Simulation produced a trajectory.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationTrajectory" }
+              example:
+                request_id: "01J9V0ZBV2K8M5RY2WJZP1V5G3"
+                animation: "pendulum"
+                duration_seconds: 10.0
+                step_size: 0.02
+                samples:
+                  - { t: 0.00, theta: 0.15, x: 0.0 }
+                  - { t: 0.02, theta: 0.149, x: 0.0 }
+                  - { t: 0.04, theta: 0.146, x: 0.001 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/BridgeUnavailable" }
+
+  /api/v1/simulations/ball-beam:
+    post:
+      tags: [simulations]
+      operationId: simulateBallBeam
+      summary: Run a ball-on-beam simulation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BallBeamRequest" }
+            example:
+              parameters:
+                ball_mass: 0.05
+                ball_radius: 0.02
+                beam_length: 1.0
+                gravity: 9.81
+                initial_position: 0.1
+                initial_velocity: 0.0
+                duration_seconds: 8.0
+                step_size: 0.02
+              control:
+                kind: "pid"
+                kp: 5.0
+                ki: 0.1
+                kd: 1.5
+      responses:
+        "200":
+          description: Simulation produced a trajectory.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationTrajectory" }
+              example:
+                request_id: "01J9V0ZC9N0R8H2P0Q1AT5K0VR"
+                animation: "ball-beam"
+                duration_seconds: 8.0
+                step_size: 0.02
+                samples:
+                  - { t: 0.00, position: 0.10, beam_angle: 0.00 }
+                  - { t: 0.02, position: 0.099, beam_angle: -0.01 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/BridgeUnavailable" }
+
+  /api/v1/logs:
+    get:
+      tags: [logs]
+      operationId: listRequestLogs
+      summary: List request logs (paginated).
+      parameters:
+        - in: query
+          name: api_key_id
+          schema: { type: string, format: ulid }
+        - in: query
+          name: route
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: integer, minimum: 100, maximum: 599 }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Paginated request log entries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/RequestLog" }
+                  meta: { $ref: "#/components/schemas/PageMeta" }
+              example:
+                data:
+                  - request_id: "01J9V0Z7C8KQX5HXR8M5H3PMSE"
+                    method: "POST"
+                    route: "/api/v1/octave/exec"
+                    status: 200
+                    duration_ms: 42
+                    api_key_prefix: "wk_live_a1b2"
+                    created_at: "2026-05-08T12:34:56Z"
+                meta:
+                  page: 1
+                  per_page: 50
+                  total: 1
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/v1/logs/export.csv:
+    get:
+      tags: [logs]
+      operationId: exportRequestLogs
+      summary: Export request logs as CSV.
+      description: |
+        For result sets above `CSV_EXPORT_LARGE_THRESHOLD` rows, returns 202 with a job
+        handle that can be polled. Below the threshold, streams CSV inline.
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: CSV stream.
+          content:
+            text/csv:
+              schema: { type: string }
+              example: |
+                request_id,method,route,status,duration_ms,api_key_prefix,created_at
+                01J9V0Z7C8KQX5HXR8M5H3PMSE,POST,/api/v1/octave/exec,200,42,wk_live_a1b2,2026-05-08T12:34:56Z
+        "202":
+          description: Export queued (large result set).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QueuedJob" }
+              example:
+                job_id: "01J9V10Z2H8X9TJ4F4MN6V7QY8"
+                status: "queued"
+                poll_url: "/api/v1/logs/export.csv/01J9V10Z2H8X9TJ4F4MN6V7QY8"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/v1/api-docs/pdf:
+    post:
+      tags: [api-docs]
+      operationId: queueApiDocsPdf
+      summary: Queue a PDF render of the OpenAPI documentation.
+      responses:
+        "202":
+          description: Render job queued.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QueuedJob" }
+              example:
+                job_id: "01J9V11A4M5N7P9R3S5T7V9W1Y"
+                status: "queued"
+                poll_url: "/api/v1/api-docs/pdf/01J9V11A4M5N7P9R3S5T7V9W1Y"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/v1/api-docs/pdf/{id}:
+    get:
+      tags: [api-docs]
+      operationId: getApiDocsPdf
+      summary: Poll a queued PDF render. When complete, returns the PDF binary.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: ulid }
+      responses:
+        "200":
+          description: Render finished — PDF binary.
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "202":
+          description: Still rendering.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QueuedJob" }
+              example:
+                job_id: "01J9V11A4M5N7P9R3S5T7V9W1Y"
+                status: "running"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/v1/stats:
+    get:
+      tags: [stats]
+      operationId: statsSummary
+      summary: Aggregate animation usage stats across all animations.
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Per-animation summary.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StatsSummary" }
+              example:
+                from: "2026-04-01"
+                to: "2026-05-08"
+                animations:
+                  - animation: "pendulum"
+                    runs: 142
+                    unique_visitors: 38
+                  - animation: "ball-beam"
+                    runs: 89
+                    unique_visitors: 22
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/v1/stats/{animation}:
+    get:
+      tags: [stats]
+      operationId: statsForAnimation
+      summary: Per-animation usage breakdown (timeline + geo).
+      parameters:
+        - in: path
+          name: animation
+          required: true
+          schema:
+            type: string
+            enum: [pendulum, ball-beam]
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Animation usage breakdown.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnimationStats" }
+              example:
+                animation: "pendulum"
+                from: "2026-04-01"
+                to: "2026-05-08"
+                timeline:
+                  - { date: "2026-05-07", runs: 12 }
+                  - { date: "2026-05-08", runs: 9 }
+                geo:
+                  - { country: "SK", runs: 70 }
+                  - { country: "CZ", runs: 21 }
+                  - { country: "DE", runs: 12 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/v1/health:
+    get:
+      tags: [ops]
+      operationId: health
+      summary: Liveness + dependency check.
+      security: []
+      responses:
+        "200":
+          description: All dependencies reachable.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+                  dependencies:
+                    type: object
+                    properties:
+                      mysql: { type: string, enum: [ok, down] }
+                      redis: { type: string, enum: [ok, down] }
+                      octave_bridge: { type: string, enum: [ok, down] }
+              example:
+                status: "ok"
+                dependencies:
+                  mysql: "ok"
+                  redis: "ok"
+                  octave_bridge: "ok"
+        "503":
+          description: At least one dependency is down.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [degraded] }
+                  dependencies: { type: object, additionalProperties: { type: string } }
+              example:
+                status: "degraded"
+                dependencies:
+                  mysql: "ok"
+                  redis: "ok"
+                  octave_bridge: "down"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key issued out-of-band. Sent as the `X-API-Key` header on every
+        request. Plain-text value shown once on creation; the server stores a
+        hash and the four-character prefix.
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "unauthorized"
+            message: "Missing or invalid API key."
+    ValidationError:
+      description: Request failed validation.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ValidationErrorBody" }
+          example:
+            message: "The given data was invalid."
+            errors:
+              parameters.length:
+                - "The parameters.length must be greater than 0."
+    RateLimited:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+          description: Seconds until the next request will be accepted.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "rate_limited"
+            message: "Too many requests."
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "not_found"
+            message: "Resource not found."
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "internal_error"
+            message: "An unexpected error occurred."
+    BridgeUnavailable:
+      description: The Octave bridge is unreachable or unhealthy.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "bridge_unavailable"
+            message: "The Octave bridge is currently unavailable."
+
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string }
+        message: { type: string }
+
+    ValidationErrorBody:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    PageMeta:
+      type: object
+      required: [page, per_page, total]
+      properties:
+        page: { type: integer, minimum: 1 }
+        per_page: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+
+    QueuedJob:
+      type: object
+      required: [job_id, status]
+      properties:
+        job_id: { type: string, format: ulid }
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        poll_url: { type: string }
+        failure_reason:
+          type: [string, "null"]
+
+    OctaveExecRequest:
+      type: object
+      required: [command]
+      properties:
+        command:
+          type: string
+          maxLength: 4096
+
+    OctaveExecResponse:
+      type: object
+      required: [request_id, stdout, stderr, duration_ms]
+      properties:
+        request_id: { type: string, format: ulid }
+        stdout: { type: string }
+        stderr: { type: string }
+        duration_ms: { type: integer, minimum: 0 }
+        figures:
+          type: array
+          items:
+            type: object
+            properties:
+              format: { type: string, enum: [png, svg] }
+              data_url: { type: string }
+
+    PendulumRequest:
+      type: object
+      required: [parameters]
+      properties:
+        parameters:
+          type: object
+          required: [cart_mass, pendulum_mass, length, gravity, duration_seconds, step_size]
+          properties:
+            cart_mass: { type: number, exclusiveMinimum: 0 }
+            pendulum_mass: { type: number, exclusiveMinimum: 0 }
+            length: { type: number, exclusiveMinimum: 0 }
+            gravity: { type: number, exclusiveMinimum: 0 }
+            friction: { type: number, minimum: 0 }
+            initial_angle: { type: number }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 60 }
+            step_size: { type: number, exclusiveMinimum: 0, maximum: 0.1 }
+        control:
+          type: object
+          properties:
+            kind: { type: string, enum: [open-loop, lqr, pid] }
+
+    BallBeamRequest:
+      type: object
+      required: [parameters]
+      properties:
+        parameters:
+          type: object
+          required: [ball_mass, ball_radius, beam_length, gravity, duration_seconds, step_size]
+          properties:
+            ball_mass: { type: number, exclusiveMinimum: 0 }
+            ball_radius: { type: number, exclusiveMinimum: 0 }
+            beam_length: { type: number, exclusiveMinimum: 0 }
+            gravity: { type: number, exclusiveMinimum: 0 }
+            initial_position: { type: number }
+            initial_velocity: { type: number }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 60 }
+            step_size: { type: number, exclusiveMinimum: 0, maximum: 0.1 }
+        control:
+          type: object
+          properties:
+            kind: { type: string, enum: [open-loop, pid] }
+            kp: { type: number }
+            ki: { type: number }
+            kd: { type: number }
+
+    SimulationTrajectory:
+      type: object
+      required: [request_id, animation, duration_seconds, step_size, samples]
+      properties:
+        request_id: { type: string, format: ulid }
+        animation: { type: string, enum: [pendulum, ball-beam] }
+        duration_seconds: { type: number }
+        step_size: { type: number }
+        samples:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    RequestLog:
+      type: object
+      required: [request_id, method, route, status, duration_ms, created_at]
+      properties:
+        request_id: { type: string, format: ulid }
+        method: { type: string }
+        route: { type: string }
+        status: { type: integer }
+        duration_ms: { type: integer }
+        api_key_prefix:
+          type: [string, "null"]
+        created_at: { type: string, format: date-time }
+
+    StatsSummary:
+      type: object
+      required: [animations]
+      properties:
+        from:
+          type: [string, "null"]
+          format: date
+        to:
+          type: [string, "null"]
+          format: date
+        animations:
+          type: array
+          items:
+            type: object
+            required: [animation, runs, unique_visitors]
+            properties:
+              animation: { type: string, enum: [pendulum, ball-beam] }
+              runs: { type: integer }
+              unique_visitors: { type: integer }
+
+    AnimationStats:
+      type: object
+      required: [animation, timeline, geo]
+      properties:
+        animation: { type: string, enum: [pendulum, ball-beam] }
+        from:
+          type: [string, "null"]
+          format: date
+        to:
+          type: [string, "null"]
+          format: date
+        timeline:
+          type: array
+          items:
+            type: object
+            required: [date, runs]
+            properties:
+              date: { type: string, format: date }
+              runs: { type: integer }
+        geo:
+          type: array
+          items:
+            type: object
+            required: [country, runs]
+            properties:
+              country: { type: string, description: "ISO 3166-1 alpha-2" }
+              runs: { type: integer }
