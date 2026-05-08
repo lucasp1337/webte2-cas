@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - app
+        - routes
+        - database
+        - tests
+    excludePaths:
+        # HorizonServiceProvider uses Gate::define with a nullable User closure whose
+        # return type larastan cannot resolve at level max — revisit in Phase 10.
+        - app/Providers/HorizonServiceProvider.php
+        # TelescopeServiceProvider uses Gate::define in a way that larastan flags at
+        # level max; telescope is dev-only and will not be extended by the project.
+        - app/Providers/TelescopeServiceProvider.php
+    # checkMissingIterableValueType and checkGenericClassInNonGenericObjectType
+    # were removed in PHPStan 2.x — both checks are always-on at level max.

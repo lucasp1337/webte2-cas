@@ -43,7 +43,7 @@ Stack is locked. Do not change without an ADR in `docs/decisions/`.
 | API docs | dedoc/scramble |
 | PDF generation | spatie/browsershot |
 | DTOs | spatie/laravel-data |
-| Tests (PHP) | Pest 3 |
+| Tests (PHP) | Pest 4 (see ADR-0001) |
 | Tests (JS) | Vitest + Testing Library |
 | Static analysis | PHPStan **level max** + larastan |
 | Formatter (PHP) | Laravel Pint |
