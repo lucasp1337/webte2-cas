@@ -8,16 +8,23 @@ from __future__ import annotations
 
 from aiohttp import web
 
+from .handlers import (
+    delete_session_handler,
+    exec_handler,
+    health_handler,
+    prune_handler,
+)
 from .middleware import error_middleware, request_id_middleware
 
 
-async def health(_request: web.Request) -> web.Response:
-    return web.json_response({"status": "ok"})
-
-
 def build_app() -> web.Application:
-    app = web.Application(middlewares=[error_middleware, request_id_middleware])
-    app.router.add_get("/health", health)
+    # request_id_middleware runs first so the request ID is available to
+    # error_middleware when it formats error responses.
+    app = web.Application(middlewares=[request_id_middleware, error_middleware])
+    app.router.add_get("/health", health_handler)
+    app.router.add_post("/exec", exec_handler)
+    app.router.add_delete("/sessions/{session_id}", delete_session_handler)
+    app.router.add_post("/sessions/prune", prune_handler)
     return app
 
 

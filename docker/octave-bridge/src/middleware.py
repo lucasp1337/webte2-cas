@@ -4,6 +4,9 @@ Two middlewares are provided:
 - request_id_middleware: generates a per-request ID, attaches it to the
   request object and injects it into JSON response bodies + X-Request-Id header.
 - error_middleware: maps BridgeError subclasses to appropriate HTTP status codes.
+  web.HTTPException subclasses (e.g. HTTPBadRequest raised by handlers for
+  malformed input) are re-raised so aiohttp can render them directly — they are
+  intentional control flow, not bugs.
 """
 
 from __future__ import annotations
@@ -35,7 +38,17 @@ async def request_id_middleware(request: web.Request, handler: Handler) -> web.S
     request_id = secrets.token_hex(16)
     request[REQUEST_ID_KEY] = request_id
 
-    response = await handler(request)
+    # Invoke the inner middleware/handler chain.  HTTPExceptions are aiohttp's
+    # mechanism for short-circuit responses (e.g. HTTPBadRequest for malformed
+    # input).  They inherit from both Exception and Response, so we catch them
+    # and treat them as the response to allow uniform request_id injection.
+    try:
+        response: web.StreamResponse = await handler(request)
+    except web.HTTPException as exc:
+        # web.HTTPException inherits from web.Response which inherits from
+        # web.StreamResponse.  Returning it directly keeps request_id injection
+        # uniform across both normal and error responses.
+        response = exc
 
     response.headers["X-Request-Id"] = request_id
 
@@ -92,6 +105,10 @@ async def error_middleware(request: web.Request, handler: Handler) -> web.Stream
             {"error": "bridge_unavailable", "request_id": request_id},
             status=503,
         )
+    except web.HTTPException:
+        # HTTPException subclasses (e.g. HTTPBadRequest raised by handlers for
+        # malformed input) are intentional control flow — let aiohttp render them.
+        raise
     except Exception:
         # Log without including any user data (command, session_id) per secrets policy.
         logger.exception("unhandled error in request handler")
