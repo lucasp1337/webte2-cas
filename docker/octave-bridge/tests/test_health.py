@@ -10,4 +10,5 @@ async def test_health_returns_ok() -> None:
         resp = await client.get("/health")
         assert resp.status == 200
         body = await resp.json()
-        assert body == {"status": "ok"}
+        assert body["status"] == "ok"
+        assert "request_id" in body  # injected by request_id_middleware

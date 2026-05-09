@@ -70,7 +70,7 @@ jobs:
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 
-      - run: cp .env.example .env
+      - run: cp .env.ci.example .env
 
       - run: php artisan key:generate
 
@@ -78,7 +78,29 @@ jobs:
 
       - run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 
-      - run: vendor/bin/pest --parallel
+      - run: vendor/bin/pest --parallel --exclude-group=integration
+
+      - name: Build and start octave-bridge
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build octave-bridge
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 2>/dev/null || true)
+            if [ "$status" = "healthy" ]; then
+              echo "bridge healthy after $((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 | grep -q '^healthy$'
+
+      - name: Run octave integration tests against live bridge
+        env:
+          OCTAVE_BRIDGE_URL: http://localhost:8001
+        run: vendor/bin/pest --group integration
+
+      - name: Tear down octave-bridge
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
 
   js-quality:
     runs-on: ubuntu-latest
@@ -113,4 +135,67 @@ jobs:
 
       - run: uv sync
 
-      - run: make qa
+      # Static gates run on the runner — no Octave needed, fast feedback, well-cached.
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy --strict src tests
+
+      - name: Prepare .env for docker compose
+        working-directory: .
+        # docker-compose.yml declares `env_file: .env` on web/cli; compose parsing
+        # demands the file exist even if those services are never started.
+        run: cp .env.ci.example .env
+
+      - name: Build octave-bridge image
+        working-directory: .
+        run: docker compose build octave-bridge
+
+      # Pytest runs INSIDE the built bridge image so the runner tests can
+      # invoke real Octave. The runner OS does not have Octave installed and
+      # we deliberately don't apt-install it — exercising the same binary
+      # the prod image carries is the locked Q2 decision.
+      - name: Run pytest inside the bridge image
+        working-directory: .
+        run: |
+          docker run --rm \
+            -v "$(pwd)/docker/octave-bridge:/work" \
+            -w /work \
+            -u root \
+            --env UV_CACHE_DIR=/tmp/uv-cache \
+            webte2-octave-bridge \
+            sh -c 'mkdir -p /tmp/uv-cache && uv sync --quiet && uv run pytest'
+
+      - name: Start octave-bridge
+        working-directory: .
+        run: |
+          docker compose up -d octave-bridge
+          # Wait for healthcheck — poll up to 60 s (30 × 2 s)
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 2>/dev/null || true)
+            if [ "$status" = "healthy" ]; then
+              echo "bridge healthy after $((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 | grep -q '^healthy$'
+
+      - name: Assert no network egress from bridge
+        working-directory: .
+        run: |
+          # octave_isolated network has internal: true — bridge must NOT reach the internet.
+          # Use curl (wget is not in the image); --connect-timeout 3 ensures a fast failure.
+          if docker compose exec -T octave-bridge curl -fsS --connect-timeout 3 http://example.com; then
+            echo "FAIL: bridge reached the open internet — no-egress is broken"
+            exit 1
+          fi
+          echo "OK: bridge cannot reach the open internet"
+
+      - name: Assert /health is reachable locally
+        working-directory: .
+        run: docker compose exec -T octave-bridge curl -fsS http://localhost:8001/health
+
+      - name: Tear down
+        if: always()
+        working-directory: .
+        run: docker compose down -v

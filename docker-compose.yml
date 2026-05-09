@@ -30,7 +30,7 @@ services:
         condition: service_healthy
       octave-bridge:
         condition: service_started
-    networks: [webte2]
+    networks: [webte2, octave_isolated]
     restart: unless-stopped
 
   cli:
@@ -50,7 +50,7 @@ services:
         condition: service_healthy
       octave-bridge:
         condition: service_started
-    networks: [webte2]
+    networks: [webte2, octave_isolated]
     restart: unless-stopped
 
   mysql:
@@ -87,10 +87,29 @@ services:
       OCTAVE_BIN: /usr/bin/octave
       SESSION_DIR: /var/octave/sessions
       SLOWDOWN_MS: 500
+      # UV_CACHE_DIR stays at /tmp/uv-cache; uv creates the dir on first use.
+      # tmpfs mounts /tmp at runtime so the dir does not need to pre-exist.
     volumes:
       - octave_sessions:/var/octave/sessions
-    networks: [webte2]
-    # Phase 02 hardens this further: drop capabilities, set ulimits, no internet egress.
+    networks:
+      - octave_isolated    # only this network — no internet egress (internal: true)
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ulimits:
+      cpu: 30
+      nproc: 64
+      fsize: 10485760      # 10 MB cap on per-write file size
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    restart: unless-stopped
 
 volumes:
   mysql_data:
@@ -100,3 +119,6 @@ volumes:
 networks:
   webte2:
     driver: bridge
+  octave_isolated:
+    driver: bridge
+    internal: true    # blocks internet egress; web/cli join both networks to reach bridge

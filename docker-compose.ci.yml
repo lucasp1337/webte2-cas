@@ -1,0 +1,12 @@
+# CI override: publishes the octave-bridge port to the runner's localhost so
+# PHP integration tests (running outside Docker on the GitHub-hosted runner)
+# can reach the bridge over HTTP. The bridge stays on the `octave_isolated`
+# network with `internal: true` for outbound egress; port publishing is
+# inbound only and does not break the no-egress guarantee.
+#
+# Used in `.github/workflows/ci.yml` via:
+#   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d octave-bridge
+services:
+  octave-bridge:
+    ports:
+      - "8001:8001"

@@ -28,6 +28,9 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+# N818 (Error suffix on exceptions): domain-aligned exception names mirror the
+# PHP-side `OctaveCommandRejectedException` etc. and the phase doc's vocabulary.
+ignore = ["N818"]
 
 [tool.mypy]
 python_version = "3.13"
