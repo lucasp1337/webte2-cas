@@ -221,10 +221,11 @@ paths:
                 data:
                   - request_id: "01J9V0Z7C8KQX5HXR8M5H3PMSE"
                     method: "POST"
-                    route: "/api/v1/octave/exec"
+                    route: "v1.octave.exec"
+                    path: "/api/v1/octave/exec"
                     status: 200
                     duration_ms: 42
-                    api_key_prefix: "wk_live_a1b2"
+                    api_key_prefix: "webte2_a"
                     created_at: "2026-05-08T12:34:56Z"
                 meta:
                   page: 1
@@ -257,8 +258,8 @@ paths:
             text/csv:
               schema: { type: string }
               example: |
-                request_id,method,route,status,duration_ms,api_key_prefix,created_at
-                01J9V0Z7C8KQX5HXR8M5H3PMSE,POST,/api/v1/octave/exec,200,42,wk_live_a1b2,2026-05-08T12:34:56Z
+                request_id,method,route,path,status,duration_ms,api_key_prefix,created_at
+                01J9V0Z7C8KQX5HXR8M5H3PMSE,POST,v1.octave.exec,/api/v1/octave/exec,200,42,webte2_a,2026-05-08T12:34:56Z
         "202":
           description: Export queued (large result set).
           content:
@@ -630,11 +631,16 @@ components:
 
     RequestLog:
       type: object
-      required: [request_id, method, route, status, duration_ms, created_at]
+      required: [request_id, method, route, path, status, duration_ms, created_at]
       properties:
         request_id: { type: string, format: ulid }
         method: { type: string }
-        route: { type: string }
+        route:
+          type: string
+          description: Laravel route name (e.g. `v1.octave.exec`); the `?route=` filter on `GET /v1/logs` matches this exact field.
+        path:
+          type: string
+          description: URL path the request hit (e.g. `/api/v1/octave/exec`).
         status: { type: integer }
         duration_ms: { type: integer }
         api_key_prefix:
