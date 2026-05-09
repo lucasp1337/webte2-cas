@@ -299,11 +299,12 @@ Phase markdowns reference shared types (`OctaveBridgeClient`, `SimulationTraject
 
 ## 11. Git conventions
 
-- `main` is protected. PR required, CI required, linear history.
+- `main` is protected. PR required, CI required, no force-push, no deletions.
 - Branch naming: `phase-XX/short-slug`.
-- Conventional Commits: `feat(scope): subject`, `fix(scope): subject`, `chore: subject`. Imperative, lowercase, no trailing period, ≤ 72 chars.
-- Squash-merge into `main`.
+- Conventional Commits: `feat(scope): subject`, `fix(scope): subject`, `chore: subject`. Imperative, lowercase, no trailing period, ≤ 72 chars. **Each commit lands in `main` as-is** (see merge mode below), so subjects are part of the permanent log — write them like the changelog entry they will become.
+- **Merge mode: merge commit (`--no-ff`)**. Each phase PR becomes one merge commit on `main` with the branch's individual commits visible underneath. This trades linear history for granular insight into the work — desired because each phase ships ~20 logical units that document the sequence of decisions. Do NOT squash-merge.
 - One PR per phase by default. Sub-PRs allowed for very large phases (02, 06) — coordinate with the human.
+- Phases 00, 01, and 02 were squash-merged before this convention was set; their granular history is lost. Phases 03+ keep individual commits.
 
 ---
 
