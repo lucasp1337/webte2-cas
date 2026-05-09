@@ -12,4 +12,5 @@ return [
     'stats_anon_token_salt' => env('STATS_ANON_TOKEN_SALT'),
     'request_log_retention_days' => (int) env('REQUEST_LOG_RETENTION_DAYS', 90),
     'csv_export_threshold' => (int) env('CSV_EXPORT_LARGE_THRESHOLD', 10000),
+    'api_key_plaintext' => env('CAS_API_KEY_PLAINTEXT'),
 ];
