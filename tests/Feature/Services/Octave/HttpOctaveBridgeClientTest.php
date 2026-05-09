@@ -203,3 +203,25 @@ it('uses the per-call timeout override when provided', function (): void {
 
     expect($result->stdout)->toBe("ok\n");
 });
+
+it('rejects path-traversal session_id in clearSession before hitting the bridge', function (): void {
+    Http::preventStrayRequests();
+    Http::fake();  // installed but should never be called
+
+    $client = new HttpOctaveBridgeClient('http://octave-bridge:8001', 5);
+
+    expect(fn () => $client->clearSession('../etc/passwd'))
+        ->toThrow(OctaveCommandRejectedException::class);
+
+    Http::assertNothingSent();
+});
+
+it('rejects too-short session_id in clearSession', function (): void {
+    Http::preventStrayRequests();
+    Http::fake();
+
+    $client = new HttpOctaveBridgeClient('http://octave-bridge:8001', 5);
+
+    expect(fn () => $client->clearSession('short'))
+        ->toThrow(OctaveCommandRejectedException::class);
+});

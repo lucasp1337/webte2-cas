@@ -12,6 +12,17 @@ use Illuminate\Support\Facades\Http;
 
 final readonly class HttpOctaveBridgeClient implements OctaveBridgeClient
 {
+    /**
+     * Mirrors the bridge's anchored regex (docker/octave-bridge/src/runner.py).
+     * Defence in depth: validate PHP-side too so a malformed `$sessionId` fails
+     * fast with a typed exception rather than producing a malformed URL or
+     * routing to a different bridge endpoint before the bridge regex runs.
+     */
+    private const string SESSION_ID_PATTERN = '/^[A-Za-z0-9_-]{8,64}$/';
+
+    /** Slack added to the HTTP transport timeout so the bridge's own clamp wins on a per-call basis. */
+    private const int HTTP_TIMEOUT_SLACK_SECONDS = 2;
+
     public function __construct(
         private string $baseUrl,
         private int $timeoutSeconds,
@@ -22,7 +33,7 @@ final readonly class HttpOctaveBridgeClient implements OctaveBridgeClient
         $timeout = $timeoutSeconds ?? $this->timeoutSeconds;
 
         try {
-            $response = Http::timeout($this->timeoutSeconds)->post("{$this->baseUrl}/exec", [
+            $response = Http::timeout($timeout + self::HTTP_TIMEOUT_SLACK_SECONDS)->post("{$this->baseUrl}/exec", [
                 'session_id' => $sessionId,
                 'command' => $command,
                 'timeout_seconds' => $timeout,
@@ -67,6 +78,13 @@ final readonly class HttpOctaveBridgeClient implements OctaveBridgeClient
 
     public function clearSession(string $sessionId): bool
     {
+        if (preg_match(self::SESSION_ID_PATTERN, $sessionId) !== 1) {
+            throw new OctaveCommandRejectedException(
+                'invalid session_id',
+                reason: 'session_id must match '.self::SESSION_ID_PATTERN,
+            );
+        }
+
         try {
             $response = Http::timeout($this->timeoutSeconds)->delete("{$this->baseUrl}/sessions/{$sessionId}");
         } catch (ConnectionException $e) {
