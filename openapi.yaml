@@ -224,7 +224,7 @@ paths:
                     route: "/api/v1/octave/exec"
                     status: 200
                     duration_ms: 42
-                    api_key_prefix: "wk_live_a1b2"
+                    api_key_prefix: "webte2_a"
                     created_at: "2026-05-08T12:34:56Z"
                 meta:
                   page: 1
@@ -258,7 +258,7 @@ paths:
               schema: { type: string }
               example: |
                 request_id,method,route,status,duration_ms,api_key_prefix,created_at
-                01J9V0Z7C8KQX5HXR8M5H3PMSE,POST,/api/v1/octave/exec,200,42,wk_live_a1b2,2026-05-08T12:34:56Z
+                01J9V0Z7C8KQX5HXR8M5H3PMSE,POST,/api/v1/octave/exec,200,42,webte2_a,2026-05-08T12:34:56Z
         "202":
           description: Export queued (large result set).
           content:
