@@ -50,27 +50,6 @@ final class ApiKey extends Model
         ];
     }
 
-    public static function findByPlaintextKey(string $plaintext): ?self
-    {
-        $prefix = substr($plaintext, 0, 8);
-
-        /** @var self|null $candidate */
-        $candidate = self::query()
-            ->where('key_prefix', $prefix)
-            ->whereNull('revoked_at')
-            ->first();
-
-        if ($candidate === null) {
-            return null;
-        }
-
-        /** @var string $appKey */
-        $appKey = config('app.key');
-        $expected = hash_hmac('sha256', $plaintext, $appKey);
-
-        return hash_equals($candidate->key_hash, $expected) ? $candidate : null;
-    }
-
     /**
      * @param  Builder<static>  $q
      */

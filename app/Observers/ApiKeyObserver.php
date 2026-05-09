@@ -5,24 +5,24 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Models\ApiKey;
+use App\Support\ApiKeyHasher;
 
-final class ApiKeyObserver
+final readonly class ApiKeyObserver
 {
+    public function __construct(private ApiKeyHasher $hasher) {}
+
     public function creating(ApiKey $apiKey): void
     {
         // key_hash is expected to hold the plaintext at this point;
-        // the observer replaces it with the HMAC digest and fills the prefix.
+        // the observer replaces it with the digest and fills the prefix.
         $plaintext = $apiKey->key_hash;
 
-        /** @var string $appKey */
-        $appKey = config('app.key');
-
-        $apiKey->key_hash = hash_hmac('sha256', $plaintext, $appKey);
+        $apiKey->key_hash = $this->hasher->hash($plaintext);
 
         // Access raw attributes to avoid PHPStan's "always false" on null check.
         $attrs = $apiKey->getAttributes();
         if (! isset($attrs['key_prefix']) || $attrs['key_prefix'] === '') {
-            $apiKey->key_prefix = substr($plaintext, 0, 8);
+            $apiKey->key_prefix = $this->hasher->prefixOf($plaintext);
         }
     }
 

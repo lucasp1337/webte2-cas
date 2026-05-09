@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Actions\Auth\AuthenticateApiKey;
 use App\Events\ApiKeyUsed;
-use App\Models\ApiKey;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class ApiKeyMiddleware
+final readonly class ApiKeyMiddleware
 {
+    public function __construct(private AuthenticateApiKey $authenticate) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         /** @var string $plaintext */
@@ -25,7 +27,7 @@ final class ApiKeyMiddleware
             );
         }
 
-        $apiKey = ApiKey::findByPlaintextKey($plaintext);
+        $apiKey = $this->authenticate->handle($plaintext);
 
         if ($apiKey === null) {
             return new JsonResponse(
