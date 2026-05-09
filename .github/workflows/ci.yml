@@ -78,7 +78,29 @@ jobs:
 
       - run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 
-      - run: vendor/bin/pest --parallel
+      - run: vendor/bin/pest --parallel --exclude-group=integration
+
+      - name: Build and start octave-bridge
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build octave-bridge
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 2>/dev/null || true)
+            if [ "$status" = "healthy" ]; then
+              echo "bridge healthy after $((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 | grep -q '^healthy$'
+
+      - name: Run octave integration tests against live bridge
+        env:
+          OCTAVE_BRIDGE_URL: http://localhost:8001
+        run: vendor/bin/pest --group integration
+
+      - name: Tear down octave-bridge
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
 
   js-quality:
     runs-on: ubuntu-latest

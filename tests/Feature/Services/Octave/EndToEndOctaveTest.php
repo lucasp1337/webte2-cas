@@ -5,12 +5,25 @@ declare(strict_types=1);
 use App\Services\Octave\OctaveBridgeClient;
 
 /**
- * Returns true when the octave-bridge container is reachable on port 8001.
- * Used to skip integration tests gracefully in environments without Docker.
+ * Returns true when the bridge service is reachable on the configured URL.
+ * Host/port are derived from `cas.octave_bridge_url` so the same probe works
+ * locally (host=octave-bridge via the docker network) and in CI (host=localhost
+ * via the published port from docker-compose.ci.yml).
  */
 function octaveBridgeReachable(): bool
 {
-    $socket = @fsockopen('octave-bridge', 8001, $errno, $errstr, 1);
+    $configured = config('cas.octave_bridge_url', 'http://octave-bridge:8001');
+    $url = is_string($configured) ? $configured : 'http://octave-bridge:8001';
+    $parts = parse_url($url);
+
+    if ($parts === false) {
+        return false;
+    }
+
+    $host = is_string($parts['host'] ?? null) ? $parts['host'] : 'octave-bridge';
+    $port = is_int($parts['port'] ?? null) ? $parts['port'] : 8001;
+
+    $socket = @fsockopen($host, $port, $errno, $errstr, 1);
 
     if ($socket === false) {
         return false;
