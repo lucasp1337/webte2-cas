@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -31,6 +32,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> betweenDates(?Carbon $from, ?Carbon $to)
  * @method static Builder<static> forRoute(string $route)
  * @method static Builder<static> withStatus(int $code)
+ *
+ * @property-read ApiKey|null $apiKey
  */
 final class RequestLog extends Model
 {
@@ -68,6 +71,12 @@ final class RequestLog extends Model
             'parameters' => 'array',
             'created_at' => 'datetime',
         ];
+    }
+
+    /** @return BelongsTo<ApiKey, $this> */
+    public function apiKey(): BelongsTo
+    {
+        return $this->belongsTo(ApiKey::class);
     }
 
     /**
