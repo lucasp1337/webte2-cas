@@ -71,7 +71,7 @@ final class GenerateLargeCsvExportJob implements ShouldBeUnique, ShouldQueue
             throw new RuntimeException("Could not open export file for writing: {$path}");
         }
 
-        fputcsv($handle, ['request_id', 'method', 'route', 'status', 'duration_ms', 'api_key_prefix', 'created_at']);
+        fputcsv($handle, ['request_id', 'method', 'route', 'path', 'status', 'duration_ms', 'api_key_prefix', 'created_at']);
 
         $query = RequestLog::query()->with('apiKey:id,key_prefix')->orderBy('id');
 
@@ -96,6 +96,7 @@ final class GenerateLargeCsvExportJob implements ShouldBeUnique, ShouldQueue
             fputcsv($handle, [
                 (string) $log->id,
                 (string) $log->method,
+                (string) $log->route,
                 (string) $log->path,
                 (string) $log->status,
                 (string) $log->duration_ms,

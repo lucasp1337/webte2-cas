@@ -33,7 +33,12 @@ final class RequestLogResource extends JsonResource
         return [
             'request_id' => $model->id,
             'method' => $model->method,
-            'route' => $model->path,
+            // Both fields exposed: `route` is the named route (e.g. `v1.octave.exec`)
+            // and is what the `?route=` filter expects — this lets clients
+            // round-trip values from the response into a follow-up filter.
+            // `path` is the raw URL path for human readability.
+            'route' => $model->route,
+            'path' => '/'.ltrim($model->path, '/'),
             'status' => $model->status,
             'duration_ms' => $model->duration_ms,
             'api_key_prefix' => $apiKeyPrefix,

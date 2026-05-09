@@ -65,7 +65,7 @@ final class ExportRequestLogsCsvController extends Controller
                 return;
             }
 
-            fputcsv($out, ['request_id', 'method', 'route', 'status', 'duration_ms', 'api_key_prefix', 'created_at']);
+            fputcsv($out, ['request_id', 'method', 'route', 'path', 'status', 'duration_ms', 'api_key_prefix', 'created_at']);
 
             $this->buildQuery($from, $to, $route)
                 ->with('apiKey:id,key_prefix')
@@ -78,6 +78,7 @@ final class ExportRequestLogsCsvController extends Controller
                         fputcsv($out, [
                             (string) $log->id,
                             (string) $log->method,
+                            (string) $log->route,
                             (string) $log->path,
                             (string) $log->status,
                             (string) $log->duration_ms,
