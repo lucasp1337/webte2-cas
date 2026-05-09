@@ -26,9 +26,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'api-key' => ApiKeyMiddleware::class,
         ]);
 
+        // Order matters: LogRequestMiddleware first so failed-auth requests
+        // (rejected by ApiKeyMiddleware with 401) still produce a RequestLog
+        // row — phase 03 DoD requires "every call is logged". The log
+        // middleware tolerates `api_key` being unset on the request and
+        // emits an X-Request-Id header for both branches.
         $middleware->group('api-protected', [
-            ApiKeyMiddleware::class,
             LogRequestMiddleware::class,
+            ApiKeyMiddleware::class,
             'throttle:cas-api',
         ]);
     })
