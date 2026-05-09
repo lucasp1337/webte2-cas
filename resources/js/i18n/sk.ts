@@ -1,4 +1,4 @@
-export const sk = {
+const skSource = {
     nav: {
         home: 'Domov',
         console: 'Konzola',
@@ -63,6 +63,8 @@ export const sk = {
         required: 'Toto pole je povinné',
         invalid: 'Neplatná hodnota',
     },
-} as const;
+};
 
-export type Translation = typeof sk;
+export type Translation = typeof skSource;
+
+export const sk: Translation = skSource;
