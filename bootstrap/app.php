@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Middleware\ApiKeyMiddleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogRequestMiddleware;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,11 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            SetLocale::class,
             HandleInertiaRequests::class,
         ]);
 
         $middleware->alias([
             'api-key' => ApiKeyMiddleware::class,
+            'set-locale' => SetLocale::class,
         ]);
 
         // Order matters: LogRequestMiddleware first so failed-auth requests
