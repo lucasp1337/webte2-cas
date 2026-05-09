@@ -70,7 +70,7 @@ jobs:
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 
-      - run: cp .env.example .env
+      - run: cp .env.ci.example .env
 
       - run: php artisan key:generate
 
@@ -136,6 +136,12 @@ jobs:
       - run: uv sync
 
       - run: make qa
+
+      - name: Prepare .env for docker compose
+        working-directory: .
+        # docker-compose.yml declares `env_file: .env` on web/cli; compose parsing
+        # demands the file exist even if those services are never started.
+        run: cp .env.ci.example .env
 
       - name: Start octave-bridge
         working-directory: .
