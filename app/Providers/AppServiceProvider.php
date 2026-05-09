@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\ApiKey;
+use App\Models\RequestLog;
+use App\Observers\ApiKeyObserver;
+use App\Observers\RequestLogObserver;
 use App\Services\Octave\HttpOctaveBridgeClient;
 use App\Services\Octave\OctaveBridgeClient;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 final class AppServiceProvider extends ServiceProvider
@@ -33,6 +40,16 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        ApiKey::observe(ApiKeyObserver::class);
+        RequestLog::observe(RequestLogObserver::class);
+
+        RateLimiter::for('cas-api', function (Request $request): Limit {
+            /** @var ApiKey|null $apiKey */
+            $apiKey = $request->attributes->get('api_key');
+            $perMinute = (int) config('cas.cas_rate_limit_per_minute', 30);
+
+            return Limit::perMinute($perMinute)
+                ->by($apiKey?->id ?? $request->ip());
+        });
     }
 }
