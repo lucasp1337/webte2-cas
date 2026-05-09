@@ -24,6 +24,7 @@ final class LogRequestMiddleware
 
         $start = microtime(true);
 
+        /** @var Response $response */
         $response = $next($request);
 
         $durationMs = (int) round((microtime(true) - $start) * 1000);
@@ -36,8 +37,9 @@ final class LogRequestMiddleware
 
         $command = null;
         if ($request->has('command')) {
-            $raw = (string) $request->input('command', '');
-            $command = substr($raw, 0, 1024);
+            /** @var string $rawCommand */
+            $rawCommand = $request->input('command', '');
+            $command = substr($rawCommand, 0, 1024);
         }
 
         $parameters = null;
@@ -78,7 +80,8 @@ final class LogRequestMiddleware
                 self::$saltFallbackWarned = true;
             }
 
-            $salt = (string) config('app.key');
+            /** @var string $salt */
+            $salt = config('app.key');
         }
 
         return hash_hmac('sha256', (string) $request->ip(), $salt);

@@ -16,7 +16,7 @@ final class CreateApiKeyCommand extends Command
 
     public function handle(): int
     {
-        $plaintext = 'webte2_' . Str::random(48);
+        $plaintext = 'webte2_'.Str::random(48);
 
         /** @var string $name */
         $name = $this->argument('name');

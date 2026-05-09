@@ -24,12 +24,19 @@ use Illuminate\Support\Carbon;
  * @property string|null $user_agent
  * @property string|null $command
  * @property array<string, mixed>|null $parameters
- * @property \Illuminate\Support\Carbon $created_at
+ * @property Carbon $created_at
+ *
+ * @method static Builder<static> successful()
+ * @method static Builder<static> forApiKey(string $apiKeyId)
+ * @method static Builder<static> betweenDates(?Carbon $from, ?Carbon $to)
+ * @method static Builder<static> forRoute(string $route)
+ * @method static Builder<static> withStatus(int $code)
  */
-class RequestLog extends Model
+final class RequestLog extends Model
 {
     /** @use HasFactory<RequestLogFactory> */
     use HasFactory;
+
     use HasUlids;
 
     /** No updated_at column on this table. */
@@ -63,16 +70,25 @@ class RequestLog extends Model
         ];
     }
 
+    /**
+     * @param  Builder<static>  $q
+     */
     public function scopeSuccessful(Builder $q): void
     {
         $q->where('success', true);
     }
 
+    /**
+     * @param  Builder<static>  $q
+     */
     public function scopeForApiKey(Builder $q, string $apiKeyId): void
     {
         $q->where('api_key_id', $apiKeyId);
     }
 
+    /**
+     * @param  Builder<static>  $q
+     */
     public function scopeBetweenDates(Builder $q, ?Carbon $from, ?Carbon $to): void
     {
         if ($from !== null) {
@@ -84,11 +100,17 @@ class RequestLog extends Model
         }
     }
 
+    /**
+     * @param  Builder<static>  $q
+     */
     public function scopeForRoute(Builder $q, string $route): void
     {
         $q->where('route', $route);
     }
 
+    /**
+     * @param  Builder<static>  $q
+     */
     public function scopeWithStatus(Builder $q, int $code): void
     {
         $q->where('status', $code);

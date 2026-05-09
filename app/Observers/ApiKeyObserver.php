@@ -13,9 +13,15 @@ final class ApiKeyObserver
         // key_hash is expected to hold the plaintext at this point;
         // the observer replaces it with the HMAC digest and fills the prefix.
         $plaintext = $apiKey->key_hash;
-        $apiKey->key_hash = hash_hmac('sha256', $plaintext, (string) config('app.key'));
 
-        if ($apiKey->key_prefix === null || $apiKey->key_prefix === '') {
+        /** @var string $appKey */
+        $appKey = config('app.key');
+
+        $apiKey->key_hash = hash_hmac('sha256', $plaintext, $appKey);
+
+        // Access raw attributes to avoid PHPStan's "always false" on null check.
+        $attrs = $apiKey->getAttributes();
+        if (! isset($attrs['key_prefix']) || $attrs['key_prefix'] === '') {
             $apiKey->key_prefix = substr($plaintext, 0, 8);
         }
     }

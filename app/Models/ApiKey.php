@@ -9,21 +9,25 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $name
  * @property string $key_prefix
  * @property string $key_hash
- * @property \Illuminate\Support\Carbon|null $last_used_at
- * @property \Illuminate\Support\Carbon|null $revoked_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon|null $last_used_at
+ * @property Carbon|null $revoked_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ *
+ * @method static Builder<static> active()
  */
-class ApiKey extends Model
+final class ApiKey extends Model
 {
     /** @use HasFactory<ApiKeyFactory> */
     use HasFactory;
+
     use HasUlids;
 
     /** @var list<string> */
@@ -60,11 +64,16 @@ class ApiKey extends Model
             return null;
         }
 
-        $expected = hash_hmac('sha256', $plaintext, (string) config('app.key'));
+        /** @var string $appKey */
+        $appKey = config('app.key');
+        $expected = hash_hmac('sha256', $plaintext, $appKey);
 
         return hash_equals($candidate->key_hash, $expected) ? $candidate : null;
     }
 
+    /**
+     * @param  Builder<static>  $q
+     */
     public function scopeActive(Builder $q): void
     {
         $q->whereNull('revoked_at');

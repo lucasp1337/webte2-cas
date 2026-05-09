@@ -30,7 +30,12 @@ final class RequestLogFactory extends Factory
             'status' => $status,
             'success' => $status < 400,
             'duration_ms' => fake()->numberBetween(5, 5000),
-            'ip_hash' => hash_hmac('sha256', '127.0.0.1', (string) config('app.key')),
+            'ip_hash' => (static function (): string {
+                /** @var string $appKey */
+                $appKey = config('app.key');
+
+                return hash_hmac('sha256', '127.0.0.1', $appKey);
+            })(),
             'user_agent' => fake()->userAgent(),
             'command' => null,
             'parameters' => null,

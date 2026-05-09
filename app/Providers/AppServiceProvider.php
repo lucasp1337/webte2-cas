@@ -46,10 +46,12 @@ final class AppServiceProvider extends ServiceProvider
         RateLimiter::for('cas-api', function (Request $request): Limit {
             /** @var ApiKey|null $apiKey */
             $apiKey = $request->attributes->get('api_key');
-            $perMinute = (int) config('cas.cas_rate_limit_per_minute', 30);
+            /** @var int $perMinute */
+            $perMinute = config('cas.cas_rate_limit_per_minute', 30);
 
-            return Limit::perMinute($perMinute)
-                ->by($apiKey?->id ?? $request->ip());
+            $key = $apiKey !== null ? $apiKey->id : $request->ip();
+
+            return Limit::perMinute($perMinute)->by($key);
         });
     }
 }

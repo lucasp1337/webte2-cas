@@ -25,7 +25,7 @@ final class ApiKeyFactory extends Factory
      */
     public function definition(): array
     {
-        $plaintext = 'webte2_' . Str::random(48);
+        $plaintext = 'webte2_'.Str::random(48);
 
         return [
             'name' => fake()->company(),

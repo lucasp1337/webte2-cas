@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Events\ApiKeyUsed;
 use App\Models\ApiKey;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,10 +15,11 @@ final class ApiKeyMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
+        /** @var string $plaintext */
         $plaintext = $request->header('X-API-Key', '');
 
-        if ($plaintext === '' || $plaintext === null) {
-            return response()->json(
+        if ($plaintext === '') {
+            return new JsonResponse(
                 ['error' => 'unauthorized', 'message' => 'Missing X-API-Key header'],
                 Response::HTTP_UNAUTHORIZED,
             );
@@ -26,7 +28,7 @@ final class ApiKeyMiddleware
         $apiKey = ApiKey::findByPlaintextKey($plaintext);
 
         if ($apiKey === null) {
-            return response()->json(
+            return new JsonResponse(
                 ['error' => 'unauthorized', 'message' => 'Invalid API key'],
                 Response::HTTP_UNAUTHORIZED,
             );
@@ -38,6 +40,9 @@ final class ApiKeyMiddleware
 
         $request->attributes->set('api_key', $apiKey);
 
-        return $next($request);
+        /** @var Response $response */
+        $response = $next($request);
+
+        return $response;
     }
 }
