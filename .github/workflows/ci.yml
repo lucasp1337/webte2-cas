@@ -135,13 +135,35 @@ jobs:
 
       - run: uv sync
 
-      - run: make qa
+      # Static gates run on the runner — no Octave needed, fast feedback, well-cached.
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy --strict src tests
 
       - name: Prepare .env for docker compose
         working-directory: .
         # docker-compose.yml declares `env_file: .env` on web/cli; compose parsing
         # demands the file exist even if those services are never started.
         run: cp .env.ci.example .env
+
+      - name: Build octave-bridge image
+        working-directory: .
+        run: docker compose build octave-bridge
+
+      # Pytest runs INSIDE the built bridge image so the runner tests can
+      # invoke real Octave. The runner OS does not have Octave installed and
+      # we deliberately don't apt-install it — exercising the same binary
+      # the prod image carries is the locked Q2 decision.
+      - name: Run pytest inside the bridge image
+        working-directory: .
+        run: |
+          docker run --rm \
+            -v "$(pwd)/docker/octave-bridge:/work" \
+            -w /work \
+            -u root \
+            --env UV_CACHE_DIR=/tmp/uv-cache \
+            webte2-octave-bridge \
+            sh -c 'mkdir -p /tmp/uv-cache && uv sync --quiet && uv run pytest'
 
       - name: Start octave-bridge
         working-directory: .
