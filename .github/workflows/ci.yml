@@ -114,3 +114,38 @@ jobs:
       - run: uv sync
 
       - run: make qa
+
+      - name: Start octave-bridge
+        working-directory: .
+        run: |
+          docker compose up -d octave-bridge
+          # Wait for healthcheck — poll up to 60 s (30 × 2 s)
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 2>/dev/null || true)
+            if [ "$status" = "healthy" ]; then
+              echo "bridge healthy after $((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 | grep -q '^healthy$'
+
+      - name: Assert no network egress from bridge
+        working-directory: .
+        run: |
+          # octave_isolated network has internal: true — bridge must NOT reach the internet.
+          # Use curl (wget is not in the image); --connect-timeout 3 ensures a fast failure.
+          if docker compose exec -T octave-bridge curl -fsS --connect-timeout 3 http://example.com; then
+            echo "FAIL: bridge reached the open internet — no-egress is broken"
+            exit 1
+          fi
+          echo "OK: bridge cannot reach the open internet"
+
+      - name: Assert /health is reachable locally
+        working-directory: .
+        run: docker compose exec -T octave-bridge curl -fsS http://localhost:8001/health
+
+      - name: Tear down
+        if: always()
+        working-directory: .
+        run: docker compose down -v
