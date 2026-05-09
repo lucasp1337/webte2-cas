@@ -38,6 +38,21 @@ final class RecordOctaveMetricsListener implements ShouldQueue
         return [10, 30, 90];
     }
 
+    public static function getCounter(string $key): int
+    {
+        $value = Cache::get($key, 0);
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return (int) $value;
+        }
+
+        return 0;
+    }
+
     public function handle(OctaveCommandExecuted $event): void
     {
         Cache::increment(self::KEY_TOTAL);

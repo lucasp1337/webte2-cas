@@ -17,10 +17,10 @@ it('increments total + successful counters and aggregates duration on success', 
     $listener = new RecordOctaveMetricsListener;
     $listener->handle(new OctaveCommandExecuted($result, 'session-abc'));
 
-    expect(Cache::get(RecordOctaveMetricsListener::KEY_TOTAL))->toBe(1)
-        ->and(Cache::get(RecordOctaveMetricsListener::KEY_SUCCESSFUL))->toBe(1)
+    expect(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_TOTAL))->toBe(1)
+        ->and(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_SUCCESSFUL))->toBe(1)
         ->and(Cache::get(RecordOctaveMetricsListener::KEY_FAILED))->toBeNull()
-        ->and(Cache::get(RecordOctaveMetricsListener::KEY_DURATION_MS_TOTAL))->toBe(42);
+        ->and(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_DURATION_MS_TOTAL))->toBe(42);
 });
 
 it('increments failed counter when the result is a rejection', function (): void {
@@ -29,9 +29,9 @@ it('increments failed counter when the result is a rejection', function (): void
     $listener = new RecordOctaveMetricsListener;
     $listener->handle(new OctaveCommandExecuted($result, 'session-abc'));
 
-    expect(Cache::get(RecordOctaveMetricsListener::KEY_TOTAL))->toBe(1)
+    expect(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_TOTAL))->toBe(1)
         ->and(Cache::get(RecordOctaveMetricsListener::KEY_SUCCESSFUL))->toBeNull()
-        ->and(Cache::get(RecordOctaveMetricsListener::KEY_FAILED))->toBe(1);
+        ->and(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_FAILED))->toBe(1);
 });
 
 it('increments failed counter when the result is a timeout', function (): void {
@@ -40,7 +40,7 @@ it('increments failed counter when the result is a timeout', function (): void {
     $listener = new RecordOctaveMetricsListener;
     $listener->handle(new OctaveCommandExecuted($result, 'session-abc'));
 
-    expect(Cache::get(RecordOctaveMetricsListener::KEY_FAILED))->toBe(1);
+    expect(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_FAILED))->toBe(1);
 });
 
 it('aggregates duration across multiple successful events', function (): void {
@@ -55,7 +55,7 @@ it('aggregates duration across multiple successful events', function (): void {
         'session-abc',
     ));
 
-    expect(Cache::get(RecordOctaveMetricsListener::KEY_TOTAL))->toBe(2)
-        ->and(Cache::get(RecordOctaveMetricsListener::KEY_SUCCESSFUL))->toBe(2)
-        ->and(Cache::get(RecordOctaveMetricsListener::KEY_DURATION_MS_TOTAL))->toBe(35);
+    expect(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_TOTAL))->toBe(2)
+        ->and(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_SUCCESSFUL))->toBe(2)
+        ->and(RecordOctaveMetricsListener::getCounter(RecordOctaveMetricsListener::KEY_DURATION_MS_TOTAL))->toBe(35);
 });
