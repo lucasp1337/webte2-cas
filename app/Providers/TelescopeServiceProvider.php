@@ -35,19 +35,23 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
     /**
      * Prevent sensitive request details from being logged by Telescope.
+     *
+     * `x-api-key` is the project's bespoke API auth header (see
+     * `App\Http\Middleware\ApiKeyMiddleware`). Hide it in EVERY environment
+     * — including local — so Telescope storage never carries plaintext
+     * keys, even on a developer laptop where the DB might be backed up
+     * or shared. Local-only redaction would defeat the purpose.
      */
     protected function hideSensitiveRequestDetails(): void
     {
-        if ($this->app->environment('local')) {
-            return;
-        }
-
         Telescope::hideRequestParameters(['_token']);
 
         Telescope::hideRequestHeaders([
             'cookie',
             'x-csrf-token',
             'x-xsrf-token',
+            'x-api-key',
+            'authorization',
         ]);
     }
 
