@@ -4,9 +4,16 @@ Octave block comments (%{ ... %}) and line comments (% ...) are stripped
 before scanning, so forbidden tokens that appear only inside comments are
 allowed — Octave never executes comment text.
 
-This is defence in depth: the container sandbox is the primary control; the
-blocklist provides a clear and helpful early error before Octave is even
-spawned.
+KNOWN FALSE-NEGATIVE: the comment stripper is not string-aware. A `%`
+character inside a string literal (e.g. `disp("a % system fake")`) starts
+a "comment" from the regex's perspective and the rest of the line is
+ignored. A determined attacker could in principle hide a forbidden token
+behind a `%` inside a string. This is acceptable because the container
+sandbox is the load-bearing control: `internal: true` network blocks
+egress, `cap_drop: ALL` blocks privilege escalation, `read_only: true`
+blocks filesystem damage, ulimits cap CPU/memory/files. The blocklist
+is defence-in-depth that produces a clear early error for legitimate
+typos; it is not the security boundary.
 """
 
 from __future__ import annotations
@@ -16,9 +23,8 @@ import re
 from .errors import CommandRejected
 
 # Each entry is (human_readable_name, compiled_pattern).
-# Patterns use \\b word boundaries so substrings inside identifiers are not
-# flagged (e.g. 'socketsxyz' does not trigger the 'socket' rule — wait, socket
-# is not in the phase-doc list; 'mysavedvar' does not trigger 'save').
+# Patterns use \b word boundaries so substrings inside identifiers are not
+# flagged (e.g. 'mysavedvar' does not trigger the 'save' rule).
 FORBIDDEN_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("system", re.compile(r"\bsystem\b", re.IGNORECASE)),
     ("unix", re.compile(r"\bunix\b", re.IGNORECASE)),
