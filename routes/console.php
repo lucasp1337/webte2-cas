@@ -2,9 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Jobs\PruneStaleOctaveSessionsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function (): void {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+/** @var int $idleHours */
+$idleHours = config('cas.octave_session_idle_hours', 24);
+
+Schedule::job(new PruneStaleOctaveSessionsJob($idleHours))
+    ->dailyAt('02:00')
+    ->name('prune-stale-octave-sessions')
+    ->onOneServer();
