@@ -8,12 +8,17 @@ use App\Services\Octave\Exceptions\OctaveBridgeUnavailableException;
 
 final readonly class OctaveExecutionResult
 {
+    public const int EXIT_CODE_REJECTED = 422;
+
+    public const int EXIT_CODE_TIMEOUT = 408;
+
     public function __construct(
         public string $requestId,
         public string $stdout,
         public string $stderr,
         public int $exitCode,
         public int $durationMs,
+        public ?string $rejectionReason = null,
     ) {}
 
     /**
@@ -62,5 +67,52 @@ final readonly class OctaveExecutionResult
             exitCode: $exitCode,
             durationMs: $durationMs,
         );
+    }
+
+    /**
+     * Synthetic result used when the bridge rejects a command. The exit code
+     * surfaces as 422 so the controller can map it to HTTP 422 without a
+     * second exception trip.
+     */
+    public static function rejected(string $reason): self
+    {
+        return new self(
+            requestId: '',
+            stdout: '',
+            stderr: $reason,
+            exitCode: self::EXIT_CODE_REJECTED,
+            durationMs: 0,
+            rejectionReason: $reason,
+        );
+    }
+
+    /**
+     * Synthetic result used when Octave times out. Exit code mirrors HTTP 408
+     * so the resource layer can serialise the status cleanly.
+     */
+    public static function timedOut(): self
+    {
+        return new self(
+            requestId: '',
+            stdout: '',
+            stderr: 'Octave execution timed out',
+            exitCode: self::EXIT_CODE_TIMEOUT,
+            durationMs: 0,
+        );
+    }
+
+    public function isSuccessful(): bool
+    {
+        return $this->exitCode === 0;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->exitCode === self::EXIT_CODE_REJECTED;
+    }
+
+    public function isTimedOut(): bool
+    {
+        return $this->exitCode === self::EXIT_CODE_TIMEOUT;
     }
 }

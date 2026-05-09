@@ -6,9 +6,12 @@ use App\Http\Middleware\ApiKeyMiddleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogRequestMiddleware;
 use App\Http\Middleware\SetLocale;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,12 +34,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Order matters: LogRequestMiddleware first so failed-auth requests
         // (rejected by ApiKeyMiddleware with 401) still produce a RequestLog
-        // row — phase 03 DoD requires "every call is logged". The log
-        // middleware tolerates `api_key` being unset on the request and
-        // emits an X-Request-Id header for both branches.
+        // row — phase 03 DoD requires "every call is logged". Session-stack
+        // middleware runs after auth so the per-browser console session
+        // cookie persists for the Octave console feature (Phase 05).
         $middleware->group('api-protected', [
             LogRequestMiddleware::class,
             ApiKeyMiddleware::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
             'throttle:cas-api',
         ]);
     })
