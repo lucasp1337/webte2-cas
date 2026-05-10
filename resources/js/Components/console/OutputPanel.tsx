@@ -55,7 +55,7 @@ function OutputEntry({ entry }: OutputEntryProps) {
 
     const wrapperClasses = cn(
         'rounded-md border bg-surface-raised',
-        status === 'rejected' || status === 'timeout' || status === 'error' ? 'border-error' : 'border-border',
+        status === 'success' ? 'border-border' : 'border-error',
     );
 
     return (
@@ -75,7 +75,11 @@ function OutputEntry({ entry }: OutputEntryProps) {
                 {status === 'timeout' && (
                     <RejectionOutput title={t.console.timeoutTitle} message={payload?.stderr ?? ''} />
                 )}
-                {status === 'error' && <RejectionOutput title={t.console.bridgeUnavailable} message="" />}
+                {status === 'unauthorized' && <RejectionOutput title={t.console.unauthorized} message="" />}
+                {status === 'rate_limited' && <RejectionOutput title={t.console.rateLimited} message="" />}
+                {status === 'bridge_unavailable' && <RejectionOutput title={t.console.bridgeUnavailable} message="" />}
+                {status === 'network_error' && <RejectionOutput title={t.console.networkError} message="" />}
+                {status === 'error' && <RejectionOutput title={t.console.genericError} message="" />}
             </div>
             {payload !== null && status === 'success' && (
                 <footer className="border-t border-border px-4 py-2 text-xs text-on-surface-muted">

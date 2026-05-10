@@ -14,7 +14,20 @@ export type OctaveExecutionPayload = {
     rejection_reason: string | null;
 };
 
-export type OctaveExecutionStatus = 'success' | 'rejected' | 'timeout' | 'error';
+/**
+ * Buckets every HTTP outcome from the exec endpoint into a small set
+ * the UI can map to a clear message. Keep these distinct — collapsing
+ * them was a real bug: a 401 was being shown as "bridge unreachable".
+ */
+export type OctaveExecutionStatus =
+    | 'success' // 200
+    | 'rejected' // 422 — sanitiser blocked the command (or validation)
+    | 'timeout' // 504 — Octave exceeded the per-call budget
+    | 'unauthorized' // 401 / 403 — missing or invalid X-API-Key
+    | 'rate_limited' // 429 — per-API-key throttle hit
+    | 'bridge_unavailable' // 503 — bridge process down or unreachable from web
+    | 'network_error' // fetch threw (DNS, CORS, transport)
+    | 'error'; // any other 4xx/5xx
 
 export type OctaveExecutionOutcome = {
     status: OctaveExecutionStatus;
@@ -27,7 +40,11 @@ const SESSION_PATH = '/api/v1/octave/session';
 
 /** Status code helpers — kept close to the resource for self-documentation. */
 const HTTP_OK = 200;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_FORBIDDEN = 403;
 const HTTP_UNPROCESSABLE = 422;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const HTTP_BRIDGE_UNAVAILABLE = 503;
 const HTTP_GATEWAY_TIMEOUT = 504;
 
 export type OctaveClientOptions = {
@@ -51,6 +68,9 @@ function classifyStatus(httpStatus: number): OctaveExecutionStatus {
     if (httpStatus === HTTP_OK) return 'success';
     if (httpStatus === HTTP_UNPROCESSABLE) return 'rejected';
     if (httpStatus === HTTP_GATEWAY_TIMEOUT) return 'timeout';
+    if (httpStatus === HTTP_UNAUTHORIZED || httpStatus === HTTP_FORBIDDEN) return 'unauthorized';
+    if (httpStatus === HTTP_TOO_MANY_REQUESTS) return 'rate_limited';
+    if (httpStatus === HTTP_BRIDGE_UNAVAILABLE) return 'bridge_unavailable';
     return 'error';
 }
 
@@ -71,7 +91,7 @@ export function createOctaveClient({ apiKey, fetcher }: OctaveClientOptions) {
                 body: JSON.stringify({ command }),
             });
         } catch {
-            return { status: 'error', payload: null, httpStatus: 0 };
+            return { status: 'network_error', payload: null, httpStatus: 0 };
         }
 
         let body: OctaveExecutionPayload | null;
