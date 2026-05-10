@@ -150,9 +150,14 @@ export default function BallBeam2D({
     const y2 = pivotY + beamHalfPx * sinT;
 
     // Ball position along the beam from the pivot (positive = toward x2 end).
+    // The ball SITS on top of the beam, not on its centreline — offset the
+    // ball centre perpendicular to the beam by ball radius + half beam
+    // thickness so they're tangent. Perpendicular "above" in screen-coords
+    // for a beam pointing along (cosT, sinT) is (-sinT, -cosT).
     const ballOffsetPx = frame.position * pxPerM;
-    const ballX = pivotX + ballOffsetPx * cosT;
-    const ballY = pivotY + ballOffsetPx * sinT;
+    const restingOffsetPx = BALL_RADIUS_PX + BEAM_THICKNESS_PX / 2;
+    const ballX = pivotX + ballOffsetPx * cosT - restingOffsetPx * sinT;
+    const ballY = pivotY + ballOffsetPx * sinT - restingOffsetPx * cosT;
 
     return (
         <div className="bg-surface-muted">
