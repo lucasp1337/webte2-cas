@@ -106,6 +106,37 @@ const skSource = {
     ballBeam: {
         title: 'Gulička na tyči',
         subtitle: 'Animovaná simulácia s grafom stavov.',
+        form: {
+            title: 'Parametre simulácie',
+            run: 'Spustiť simuláciu',
+            running: 'Simuluje sa…',
+            reset: 'Obnoviť predvolené',
+            restartWithNewR: 'Spustiť s novým r',
+            fields: {
+                ball_mass: 'Hmotnosť guličky m (kg)',
+                ball_radius: 'Polomer guličky R (m)',
+                inertia: 'Moment zotrvačnosti J (kg·m²)',
+                beam_length: 'Dĺžka nosníka (m)',
+                gravity: 'Gravitácia g (m/s²)',
+                reference_position: 'Referenčná poloha r (m)',
+                initial_position: 'Počiatočná poloha (m)',
+                initial_velocity: 'Počiatočná rýchlosť (m/s)',
+                initial_angle: 'Počiatočný uhol (rad)',
+                duration_seconds: 'Čas simulácie (s)',
+                step_size: 'Krok dt (s)',
+            },
+        },
+        chart: {
+            title: 'Poloha guličky a uhol nosníka v čase',
+            timeLabel: 'Čas (s)',
+            positionLabel: 'Poloha (m)',
+            angleLabel: 'Uhol nosníka (rad)',
+        },
+        tiltExaggerated: '(Náklon nosníka je pre prehľadnosť zveličený)',
+        errors: {
+            simulationFailed: 'Simulácia zlyhala',
+            unexpected: 'Nastala neočakávaná chyba. Skúste to znova.',
+        },
     },
     logs: {
         title: 'Logy požiadaviek',
