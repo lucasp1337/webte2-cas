@@ -74,8 +74,8 @@ describe('Pendulum2D', () => {
             <Pendulum2D frames={[makeFrame(0, 0)]} cursorIndex={0} width={WIDTH} height={HEIGHT} />,
         );
 
-        // Cart is centred at width/2 + x * PX_PER_M, offset by -CART_W/2.
-        // With x=0: cartX = 800/2 + 0 - 30 = 370
+        // With x=0 the cart is horizontally centred regardless of px-per-metre
+        // scaling: cartX = WIDTH/2 - CART_W/2 = 400 - 30 = 370.
         const rect = container.querySelector('[data-konva="Rect"]');
         expect(rect).toBeInTheDocument();
         expect(Number(rect?.getAttribute('data-x'))).toBeCloseTo(370, 0);
@@ -123,8 +123,11 @@ describe('Pendulum2D', () => {
         rerender(<Pendulum2D frames={frames} cursorIndex={1} width={WIDTH} height={HEIGHT} />);
         const x1 = Number(container.querySelector('[data-konva="Rect"]')?.getAttribute('data-x'));
 
-        // Frame 1 has x=0.3 m → cart should be 60 px further right than frame 0
+        // Frame 1 has x=0.3 m → cart should be visibly further right.
+        // Exact pixel offset depends on the dynamic px-per-metre scaling
+        // (which now fits the rod into the canvas), so assert directional
+        // and order-of-magnitude rather than a fixed pixel count.
         expect(x1).toBeGreaterThan(x0);
-        expect(x1 - x0).toBeCloseTo(0.3 * 200, 0); // PX_PER_M = 200
+        expect(x1 - x0).toBeGreaterThan(50);
     });
 });

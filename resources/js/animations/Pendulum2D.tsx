@@ -7,15 +7,21 @@ import { Circle, Layer, Line, Rect, Stage } from 'react-konva';
 
 import type { AnimationRendererProps, PendulumFrame } from '@/animations/types';
 
-/** Pixels that represent one metre in the Konva canvas. */
-const PX_PER_M = 200;
-
 /** Width and height of the cart rectangle in pixels. */
 const CART_W = 60;
 const CART_H = 30;
 
 /** Radius of the pendulum bob in pixels. */
 const BOB_RADIUS = 12;
+
+/** Vertical margin above the bob and below the cart, in pixels. */
+const VERTICAL_PADDING = 16;
+
+/**
+ * Vertical position of the cart centre as a fraction of canvas height.
+ * Putting the cart in the lower portion gives the upright rod room to render.
+ */
+const CART_VERTICAL_FRACTION = 0.85;
 
 /** Fallback rod length in metres when the component receives no override. */
 const DEFAULT_LENGTH_M = 0.5;
@@ -41,11 +47,12 @@ type EmptyStageProps = {
 };
 
 function EmptyStage({ width, height }: EmptyStageProps): ReactElement {
+    const trackY = height * CART_VERTICAL_FRACTION;
     return (
         <div className="bg-surface-muted">
             <Stage width={width} height={height}>
                 <Layer>
-                    <Line points={[0, height / 2, width, height / 2]} stroke={COLOR_TRACK} strokeWidth={2} />
+                    <Line points={[0, trackY, width, trackY]} stroke={COLOR_TRACK} strokeWidth={2} />
                 </Layer>
             </Stage>
         </div>
@@ -74,11 +81,18 @@ export default function Pendulum2D({
         return <EmptyStage width={width} height={height} />;
     }
 
-    const rodPx = lengthMeters * PX_PER_M;
-    const originY = height / 2;
+    // Place the cart in the lower portion so the upright rod has room above.
+    const originY = height * CART_VERTICAL_FRACTION;
+
+    // Scale: pick PX_PER_M so the rod (when fully upright) fills the available
+    // vertical space above the cart, leaving room for the bob and a margin.
+    // Same scale applies to horizontal cart motion so distances stay in proportion.
+    const availableRodPx = originY - BOB_RADIUS - VERTICAL_PADDING;
+    const pxPerM = availableRodPx / Math.max(lengthMeters, 0.05);
+    const rodPx = lengthMeters * pxPerM;
 
     // Cart centre x in canvas pixels.
-    const cartCx = width / 2 + frame.x * PX_PER_M;
+    const cartCx = width / 2 + frame.x * pxPerM;
     const cartX = cartCx - CART_W / 2;
     const cartY = originY - CART_H / 2;
 
