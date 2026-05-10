@@ -269,14 +269,15 @@
                                         @php
                                             /** @var array<string, mixed> $param */
                                             $schema = $param['schema'] ?? [];
-                                            $type = is_array($schema) ? ($schema['type'] ?? '-') : '-';
+                                            $rawType = is_array($schema) ? ($schema['type'] ?? '-') : '-';
+                                            $type = is_array($rawType) ? implode('|', array_filter(array_map('strval', $rawType), fn (string $v) => $v !== 'null')) : (is_string($rawType) ? $rawType : '-');
                                         @endphp
                                         <tr>
                                             <td><code>{{ $param['name'] ?? '' }}</code></td>
                                             <td>{{ $param['in'] ?? '' }}</td>
                                             <td>{{ $type }}</td>
                                             <td>{{ !empty($param['required']) ? '✓' : '' }}</td>
-                                            <td>{{ $param['description'] ?? '' }}</td>
+                                            <td>{{ is_string($param['description'] ?? '') ? ($param['description'] ?? '') : '' }}</td>
                                         </tr>
                                     @endif
                                 @endforeach
