@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\ApiKeyMiddleware;
+use App\Http\Middleware\EnsureAnonTokenMiddleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogRequestMiddleware;
 use App\Http\Middleware\SetLocale;
@@ -43,6 +44,18 @@ return Application::configure(basePath: dirname(__DIR__))
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
+            'throttle:cas-api',
+        ]);
+
+        // Extends api-protected with the anonymous-token cookie middleware
+        // needed by the simulation routes for phase-09 stats cooldown.
+        $middleware->group('api-simulation', [
+            LogRequestMiddleware::class,
+            ApiKeyMiddleware::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            EnsureAnonTokenMiddleware::class,
             'throttle:cas-api',
         ]);
     })
