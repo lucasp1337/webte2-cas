@@ -40,13 +40,18 @@ Route::prefix('v1')->middleware('api-protected')->group(function (): void {
         ->whereUlid('exportId')
         ->name('v1.logs.export.poll');
 
-    Route::post('/api-docs/pdf', RequestApiDocsPdfController::class)->name('v1.api-docs.pdf.request');
-    Route::get('/api-docs/pdf/{exportId}', DownloadApiDocsPdfController::class)
-        ->whereUlid('exportId')
-        ->name('v1.api-docs.pdf.download');
-
     Route::get('/stats', StatsSummaryController::class)->name('v1.stats.summary');
     Route::get('/stats/{animation}', StatsForAnimationController::class)
         ->whereIn('animation', ['pendulum', 'ball-beam'])
         ->name('v1.stats.detail');
+});
+
+// API-docs PDF — public, parallels the public openapi.json. The page itself
+// is anonymous and we don't ship an API key to the browser, so these routes
+// can't sit behind X-API-Key. Throttle keyed by IP to bound abuse.
+Route::prefix('v1')->middleware('throttle:cas-api')->group(function (): void {
+    Route::post('/api-docs/pdf', RequestApiDocsPdfController::class)->name('v1.api-docs.pdf.request');
+    Route::get('/api-docs/pdf/{exportId}', DownloadApiDocsPdfController::class)
+        ->whereUlid('exportId')
+        ->name('v1.api-docs.pdf.download');
 });

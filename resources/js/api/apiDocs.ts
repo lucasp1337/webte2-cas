@@ -9,7 +9,6 @@ const queuedJobSchema = z.object({
 export type ApiDocsJobState = z.infer<typeof queuedJobSchema>;
 
 export type ApiDocsClientOptions = {
-    apiKey: string;
     /** Optional fetch override for tests. */
     fetcher?: typeof fetch;
 };
@@ -24,14 +23,17 @@ export class ApiDocsRequestError extends Error {
     }
 }
 
-export function createApiDocsClient({ apiKey, fetcher }: ApiDocsClientOptions) {
+export function createApiDocsClient({ fetcher }: ApiDocsClientOptions = {}) {
     const fetchImpl: typeof fetch = fetcher ?? globalThis.fetch.bind(globalThis);
 
     async function requestPdfRender(locale: 'sk' | 'en'): Promise<ApiDocsJobState> {
+        // PDF endpoints are public (parallels /api/openapi.json). No X-API-Key
+        // is shipped — the docs page is anonymous and we never serialise the
+        // seeded key into the rendered Inertia props.
         const resp = await fetchImpl(`/api/v1/api-docs/pdf?locale=${locale}`, {
             method: 'POST',
             credentials: 'include',
-            headers: { Accept: 'application/json', 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
         });
         if (resp.status !== 202)
@@ -43,7 +45,7 @@ export function createApiDocsClient({ apiKey, fetcher }: ApiDocsClientOptions) {
         const resp = await fetchImpl(`/api/v1/api-docs/pdf/${exportId}`, {
             method: 'GET',
             credentials: 'include',
-            headers: { 'X-API-Key': apiKey },
+            headers: { Accept: 'application/json' },
         });
         const contentType = resp.headers.get('content-type') ?? '';
         if (resp.status === 200 && contentType.includes('application/pdf')) {

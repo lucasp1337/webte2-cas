@@ -6,10 +6,6 @@ import { ApiDocsRequestError, createApiDocsClient } from '@/api/apiDocs';
 import { useLocale, useT } from '@/hooks/useT';
 import AppLayout from '@/Layouts/AppLayout';
 
-export type ApiDocsPageProps = {
-    apiKey: string;
-};
-
 type DownloadState =
     | { kind: 'idle' }
     | { kind: 'requesting' }
@@ -19,14 +15,14 @@ type DownloadState =
 const POLL_INTERVAL_MS = 1000;
 const POLL_MAX_ATTEMPTS = 30;
 
-export default function ApiDocs({ apiKey }: ApiDocsPageProps): ReactElement {
+export default function ApiDocs(): ReactElement {
     const t = useT();
     const locale = useLocale();
     const [downloadState, setDownloadState] = useState<DownloadState>({ kind: 'idle' });
 
     async function handleDownload(): Promise<void> {
         setDownloadState({ kind: 'requesting' });
-        const client = createApiDocsClient({ apiKey });
+        const client = createApiDocsClient();
 
         try {
             const job = await client.requestPdfRender(locale);

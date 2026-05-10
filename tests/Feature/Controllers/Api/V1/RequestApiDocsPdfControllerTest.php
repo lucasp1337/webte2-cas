@@ -22,9 +22,15 @@ function makePdfRequestApiKey(string $suffix): array
     return [$apiKey, $plaintext];
 }
 
-it('returns 401 without an api key', function (): void {
+it('is public and accepts requests without an api key', function (): void {
+    // The pdf endpoints sit alongside /api/openapi.json — both are public
+    // documentation routes. The page that consumes them is anonymous and
+    // we deliberately don't ship the seeded api key to the browser.
+    Queue::fake();
+
     postJson('/api/v1/api-docs/pdf')
-        ->assertStatus(401);
+        ->assertStatus(202)
+        ->assertJsonStructure(['export_id', 'status', 'poll_url']);
 });
 
 it('returns 202 and enqueues the job on a valid request', function (): void {
