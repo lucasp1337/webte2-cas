@@ -584,8 +584,8 @@ components:
             gravity: { type: number, exclusiveMinimum: 0 }
             friction: { type: number, minimum: 0 }
             initial_angle: { type: number }
-            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 60 }
-            step_size: { type: number, exclusiveMinimum: 0, maximum: 0.1 }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 30 }
+            step_size: { type: number, minimum: 0.001, maximum: 0.5 }
         control:
           type: object
           properties:
@@ -605,8 +605,8 @@ components:
             gravity: { type: number, exclusiveMinimum: 0 }
             initial_position: { type: number }
             initial_velocity: { type: number }
-            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 60 }
-            step_size: { type: number, exclusiveMinimum: 0, maximum: 0.1 }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 30 }
+            step_size: { type: number, minimum: 0.001, maximum: 0.5 }
         control:
           type: object
           properties:
