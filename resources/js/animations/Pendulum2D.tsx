@@ -2,6 +2,7 @@
 // using Three.js — the Pendulum2D and Pendulum3D renderers are interchangeable
 // via the AnimationRenderer<PendulumFrame> type; the page passes them as a prop.
 
+import { type ReactElement } from 'react';
 import { Circle, Layer, Line, Rect, Stage } from 'react-konva';
 
 import type { AnimationRendererProps, PendulumFrame } from '@/animations/types';
@@ -39,13 +40,15 @@ type EmptyStageProps = {
     height: number;
 };
 
-function EmptyStage({ width, height }: EmptyStageProps): React.ReactElement {
+function EmptyStage({ width, height }: EmptyStageProps): ReactElement {
     return (
-        <Stage width={width} height={height}>
-            <Layer>
-                <Line points={[0, height / 2, width, height / 2]} stroke={COLOR_TRACK} strokeWidth={2} />
-            </Layer>
-        </Stage>
+        <div className="bg-surface-muted">
+            <Stage width={width} height={height}>
+                <Layer>
+                    <Line points={[0, height / 2, width, height / 2]} stroke={COLOR_TRACK} strokeWidth={2} />
+                </Layer>
+            </Stage>
+        </div>
     );
 }
 
@@ -58,7 +61,13 @@ function EmptyStage({ width, height }: EmptyStageProps): React.ReactElement {
  * This is a pure component — it reads `frames[cursorIndex]` and renders.
  * It never owns the animation loop.
  */
-export default function Pendulum2D({ frames, cursorIndex, width, height, lengthMeters = DEFAULT_LENGTH_M }: Pendulum2DProps): React.ReactElement {
+export default function Pendulum2D({
+    frames,
+    cursorIndex,
+    width,
+    height,
+    lengthMeters = DEFAULT_LENGTH_M,
+}: Pendulum2DProps): ReactElement {
     const frame = frames[cursorIndex];
 
     if (frame === undefined) {
@@ -79,7 +88,7 @@ export default function Pendulum2D({ frames, cursorIndex, width, height, lengthM
     const bobY = originY - Math.cos(frame.theta) * rodPx;
 
     return (
-        <div className="overflow-hidden rounded-md border border-border bg-surface-muted">
+        <div className="bg-surface-muted">
             <Stage width={width} height={height}>
                 <Layer>
                     {/* Ground track */}
