@@ -25,6 +25,14 @@ final class OpenApiSpecController extends Controller
             },
         );
 
+        // Use a relative server URL so Swagger UI's "Try it out" requests
+        // follow the browser's current origin (e.g. localhost:8080 in dev).
+        // Scramble's built-in server resolution would absolutise against
+        // APP_URL on port 80, sending preflights to apache.
+        $spec['servers'] = [
+            ['url' => '/api/v1', 'description' => 'Same-origin'],
+        ];
+
         return response()->json($spec);
     }
 }

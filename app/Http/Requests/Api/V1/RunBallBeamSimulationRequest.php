@@ -22,7 +22,22 @@ final class RunBallBeamSimulationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // The composite rule does deep validation (finite checks, bounds).
+            // The per-field dot-notation rules below give Scramble enough
+            // type info to render `parameters` as a structured object in the
+            // OpenAPI spec — without them it falls back to `array of string`.
             'parameters' => ['required', 'array', new ValidBallBeamParameters],
+            'parameters.ball_mass' => ['required', 'numeric'],
+            'parameters.ball_radius' => ['required', 'numeric'],
+            'parameters.inertia' => ['required', 'numeric'],
+            'parameters.gravity' => ['required', 'numeric'],
+            'parameters.beam_length' => ['required', 'numeric'],
+            'parameters.reference_position' => ['required', 'numeric'],
+            'parameters.initial_position' => ['required', 'numeric'],
+            'parameters.initial_velocity' => ['required', 'numeric'],
+            'parameters.initial_angle' => ['required', 'numeric'],
+            'parameters.duration_seconds' => ['required', 'numeric'],
+            'parameters.step_size' => ['required', 'numeric'],
             'continue_from' => ['nullable', 'array', 'size:4'],
             // Laravel's `numeric` rule accepts the strings "Infinity", "INF",
             // "NAN" and PHP's INF/NAN floats; sprintf turns them into valid

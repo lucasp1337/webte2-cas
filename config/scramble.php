@@ -75,6 +75,13 @@ return [
 
     /*
      * The list of servers of the API.
+     *
+     * Left null — `OpenApiSpecController` overrides `servers` after Scramble
+     * generates so we can emit a relative URL (`/api/v1`). Scramble's own
+     * server resolution runs values through Laravel's `url()` helper which
+     * absolutises against APP_URL (port 80), which broke "Try it out" when
+     * the dev stack is on `localhost:8080`. Relative URLs follow the
+     * browser's current origin instead.
      */
     'servers' => null,
 
