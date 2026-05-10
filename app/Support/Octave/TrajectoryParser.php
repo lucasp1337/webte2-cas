@@ -98,8 +98,8 @@ final readonly class TrajectoryParser
         return new SimulationTrajectory(
             requestId: $requestId,
             animation: AnimationName::Pendulum,
-            durationSeconds: $parameters->t_end,
-            stepSize: $parameters->dt,
+            durationSeconds: $parameters->duration_seconds,
+            stepSize: $parameters->step_size,
             samples: $samples,
             finalState: $finalState,
         );

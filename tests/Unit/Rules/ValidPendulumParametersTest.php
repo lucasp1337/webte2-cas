@@ -18,17 +18,17 @@ uses(TestCase::class);
 function ruleValidParams(array $overrides = []): array
 {
     return array_merge([
-        'M' => 1.0,
-        'm' => 0.2,
-        'b' => 0.1,
-        'I' => 0.006,
-        'g' => 9.81,
-        'l' => 0.5,
-        'r' => 0.2,
-        'init_position' => 0.0,
-        'init_angle' => 0.15,
-        't_end' => 10.0,
-        'dt' => 0.02,
+        'cart_mass' => 1.0,
+        'pendulum_mass' => 0.2,
+        'friction' => 0.1,
+        'inertia' => 0.006,
+        'gravity' => 9.81,
+        'length' => 0.5,
+        'reference_position' => 0.2,
+        'initial_position' => 0.0,
+        'initial_angle' => 0.15,
+        'duration_seconds' => 10.0,
+        'step_size' => 0.02,
     ], $overrides);
 }
 
@@ -53,138 +53,138 @@ describe('ValidPendulumParameters rule', function (): void {
     });
 
     it('accepts boundary: t_end=30, dt=0.001, b=0', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['t_end' => 30, 'dt' => 0.001, 'b' => 0.0]));
+        $errors = runPendulumRule(ruleValidParams(['duration_seconds' => 30, 'step_size' => 0.001, 'friction' => 0.0]));
         expect($errors->isEmpty())->toBeTrue();
     });
 
     it('accepts boundary: dt=0.5', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['dt' => 0.5]));
+        $errors = runPendulumRule(ruleValidParams(['step_size' => 0.5]));
         expect($errors->isEmpty())->toBeTrue();
     });
 
     it('rejects cart_mass equal to zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['M' => 0]));
+        $errors = runPendulumRule(ruleValidParams(['cart_mass' => 0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('M');
+        expect($errors->first('parameters'))->toContain('cart_mass');
     });
 
     it('rejects cart_mass below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['M' => -1.0]));
+        $errors = runPendulumRule(ruleValidParams(['cart_mass' => -1.0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects pendulum_mass equal to zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['m' => 0]));
+        $errors = runPendulumRule(ruleValidParams(['pendulum_mass' => 0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('m');
+        expect($errors->first('parameters'))->toContain('pendulum_mass');
     });
 
     it('rejects pendulum_mass below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['m' => -0.5]));
+        $errors = runPendulumRule(ruleValidParams(['pendulum_mass' => -0.5]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects friction below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['b' => -0.1]));
+        $errors = runPendulumRule(ruleValidParams(['friction' => -0.1]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('b');
+        expect($errors->first('parameters'))->toContain('friction');
     });
 
     it('rejects inertia equal to zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['I' => 0]));
+        $errors = runPendulumRule(ruleValidParams(['inertia' => 0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('I');
+        expect($errors->first('parameters'))->toContain('inertia');
     });
 
     it('rejects inertia below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['I' => -0.001]));
+        $errors = runPendulumRule(ruleValidParams(['inertia' => -0.001]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects gravity equal to zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['g' => 0]));
+        $errors = runPendulumRule(ruleValidParams(['gravity' => 0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('g');
+        expect($errors->first('parameters'))->toContain('gravity');
     });
 
     it('rejects gravity below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['g' => -9.81]));
+        $errors = runPendulumRule(ruleValidParams(['gravity' => -9.81]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects rod_length equal to zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['l' => 0]));
+        $errors = runPendulumRule(ruleValidParams(['length' => 0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('l');
+        expect($errors->first('parameters'))->toContain('length');
     });
 
     it('rejects rod_length below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['l' => -0.5]));
+        $errors = runPendulumRule(ruleValidParams(['length' => -0.5]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects t_end above 30', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['t_end' => 31.0]));
+        $errors = runPendulumRule(ruleValidParams(['duration_seconds' => 31.0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('t_end');
+        expect($errors->first('parameters'))->toContain('duration_seconds');
     });
 
     it('rejects t_end equal to zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['t_end' => 0.0]));
+        $errors = runPendulumRule(ruleValidParams(['duration_seconds' => 0.0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects t_end below zero', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['t_end' => -5.0]));
+        $errors = runPendulumRule(ruleValidParams(['duration_seconds' => -5.0]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects dt below 0.001', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['dt' => 0.0005]));
+        $errors = runPendulumRule(ruleValidParams(['step_size' => 0.0005]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('dt');
+        expect($errors->first('parameters'))->toContain('step_size');
     });
 
     it('rejects dt above 0.5', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['dt' => 0.6]));
+        $errors = runPendulumRule(ruleValidParams(['step_size' => 0.6]));
 
         expect($errors->isNotEmpty())->toBeTrue();
     });
 
     it('rejects NaN for cart_mass', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['M' => NAN]));
+        $errors = runPendulumRule(ruleValidParams(['cart_mass' => NAN]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('M');
+        expect($errors->first('parameters'))->toContain('cart_mass');
     });
 
     it('rejects positive infinity for gravity', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['g' => INF]));
+        $errors = runPendulumRule(ruleValidParams(['gravity' => INF]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('g');
+        expect($errors->first('parameters'))->toContain('gravity');
     });
 
     it('rejects negative infinity for rod_length', function (): void {
-        $errors = runPendulumRule(ruleValidParams(['l' => -INF]));
+        $errors = runPendulumRule(ruleValidParams(['length' => -INF]));
 
         expect($errors->isNotEmpty())->toBeTrue();
-        expect($errors->first('parameters'))->toContain('l');
+        expect($errors->first('parameters'))->toContain('length');
     });
 
     it('rejects a non-array input', function (): void {
@@ -197,9 +197,9 @@ describe('ValidPendulumParameters rule', function (): void {
     });
 
     it('rejects parameters with a missing required field', function (): void {
-        // Remove 'M' entirely so PendulumParameters::from() cannot cast it.
+        // Remove 'cart_mass' entirely so PendulumParameters::from() cannot cast it.
         $incomplete = ruleValidParams();
-        unset($incomplete['M']);
+        unset($incomplete['cart_mass']);
 
         $errors = runPendulumRule($incomplete);
 

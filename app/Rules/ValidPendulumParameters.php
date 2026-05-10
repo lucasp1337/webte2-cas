@@ -46,48 +46,48 @@ final class ValidPendulumParameters implements ValidationRule
             return;
         }
 
-        $this->checkFinite('M', $p->M, $fail);
-        $this->checkFinite('m', $p->m, $fail);
-        $this->checkFinite('b', $p->b, $fail);
-        $this->checkFinite('I', $p->I, $fail);
-        $this->checkFinite('g', $p->g, $fail);
-        $this->checkFinite('l', $p->l, $fail);
-        $this->checkFinite('r', $p->r, $fail);
-        $this->checkFinite('init_position', $p->init_position, $fail);
-        $this->checkFinite('init_angle', $p->init_angle, $fail);
-        $this->checkFinite('t_end', $p->t_end, $fail);
-        $this->checkFinite('dt', $p->dt, $fail);
+        $this->checkFinite('cart_mass', $p->cart_mass, $fail);
+        $this->checkFinite('pendulum_mass', $p->pendulum_mass, $fail);
+        $this->checkFinite('friction', $p->friction, $fail);
+        $this->checkFinite('inertia', $p->inertia, $fail);
+        $this->checkFinite('gravity', $p->gravity, $fail);
+        $this->checkFinite('length', $p->length, $fail);
+        $this->checkFinite('reference_position', $p->reference_position, $fail);
+        $this->checkFinite('initial_position', $p->initial_position, $fail);
+        $this->checkFinite('initial_angle', $p->initial_angle, $fail);
+        $this->checkFinite('duration_seconds', $p->duration_seconds, $fail);
+        $this->checkFinite('step_size', $p->step_size, $fail);
 
-        if ($p->M <= 0) {
-            $fail('Cart mass M must be greater than 0.');
+        if ($p->cart_mass <= 0) {
+            $fail('cart_mass must be greater than 0.');
         }
 
-        if ($p->m <= 0) {
-            $fail('Pendulum mass m must be greater than 0.');
+        if ($p->pendulum_mass <= 0) {
+            $fail('pendulum_mass must be greater than 0.');
         }
 
-        if ($p->b < 0) {
-            $fail('Friction coefficient b must be 0 or greater.');
+        if ($p->friction < 0) {
+            $fail('friction must be 0 or greater.');
         }
 
-        if ($p->I <= 0) {
-            $fail('Moment of inertia I must be greater than 0.');
+        if ($p->inertia <= 0) {
+            $fail('inertia must be greater than 0.');
         }
 
-        if ($p->g <= 0) {
-            $fail('Gravitational acceleration g must be greater than 0.');
+        if ($p->gravity <= 0) {
+            $fail('gravity must be greater than 0.');
         }
 
-        if ($p->l <= 0) {
-            $fail('Pendulum length l must be greater than 0.');
+        if ($p->length <= 0) {
+            $fail('length must be greater than 0.');
         }
 
-        if ($p->t_end <= 0 || $p->t_end > 30) {
-            $fail('Simulation duration t_end must be in the range (0, 30].');
+        if ($p->duration_seconds <= 0 || $p->duration_seconds > 30) {
+            $fail('duration_seconds must be in the range (0, 30].');
         }
 
-        if ($p->dt < 0.001 || $p->dt > 0.5) {
-            $fail('Time step dt must be in the range [0.001, 0.5].');
+        if ($p->step_size < 0.001 || $p->step_size > 0.5) {
+            $fail('step_size must be in the range [0.001, 0.5].');
         }
     }
 

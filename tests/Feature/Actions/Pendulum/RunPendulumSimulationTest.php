@@ -13,20 +13,20 @@ use App\Services\Octave\Testing\FakeOctaveBridgeClient;
 use Illuminate\Support\Facades\Event;
 
 /** Build a valid PendulumParameters DTO. */
-function actionTestParams(float $M = 1.0): PendulumParameters
+function actionTestParams(float $cartMass = 1.0): PendulumParameters
 {
     return new PendulumParameters(
-        M: $M,
-        m: 0.2,
-        b: 0.1,
-        I: 0.006,
-        g: 9.81,
-        l: 0.5,
-        r: 0.2,
-        init_position: 0.0,
-        init_angle: 0.15,
-        t_end: 0.08,
-        dt: 0.02,
+        cart_mass: $cartMass,
+        pendulum_mass: 0.2,
+        friction: 0.1,
+        inertia: 0.006,
+        gravity: 9.81,
+        length: 0.5,
+        reference_position: 0.2,
+        initial_position: 0.0,
+        initial_angle: 0.15,
+        duration_seconds: 0.08,
+        step_size: 0.02,
     );
 }
 
@@ -144,12 +144,12 @@ describe('RunPendulumSimulation action', function (): void {
 
         /** @var RunPendulumSimulation $action */
         $action = app(RunPendulumSimulation::class);
-        $action->handle(actionTestParams(M: 1.0), null, 'tok', '127.0.0.1');
+        $action->handle(actionTestParams(cartMass: 1.0), null, 'tok', '127.0.0.1');
 
         $fake->setNextResult(
             new OctaveExecutionResult('req-hb', actionFixtureStdout(), '', 0, 100),
         );
-        $action->handle(actionTestParams(M: 2.0), null, 'tok', '127.0.0.1');
+        $action->handle(actionTestParams(cartMass: 2.0), null, 'tok', '127.0.0.1');
 
         $hashes = [];
         Event::assertDispatched(SimulationStarted::class, function (SimulationStarted $e) use (&$hashes): bool {

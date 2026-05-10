@@ -10,20 +10,20 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /** Build a minimal PendulumParameters DTO for parser tests. */
-function parserTestParameters(float $tEnd = 0.08, float $dt = 0.02): PendulumParameters
+function parserTestParameters(float $durationSeconds = 0.08, float $stepSize = 0.02): PendulumParameters
 {
     return new PendulumParameters(
-        M: 1.0,
-        m: 0.2,
-        b: 0.1,
-        I: 0.006,
-        g: 9.81,
-        l: 0.5,
-        r: 0.2,
-        init_position: 0.0,
-        init_angle: 0.15,
-        t_end: $tEnd,
-        dt: $dt,
+        cart_mass: 1.0,
+        pendulum_mass: 0.2,
+        friction: 0.1,
+        inertia: 0.006,
+        gravity: 9.81,
+        length: 0.5,
+        reference_position: 0.2,
+        initial_position: 0.0,
+        initial_angle: 0.15,
+        duration_seconds: $durationSeconds,
+        step_size: $stepSize,
     );
 }
 
@@ -78,7 +78,7 @@ describe('TrajectoryParser', function (): void {
     it('parses a complete trajectory from the golden fixture', function (): void {
         /** @var TrajectoryParser $parser */
         $parser = app(TrajectoryParser::class);
-        $params = parserTestParameters(tEnd: 0.08, dt: 0.02);
+        $params = parserTestParameters(durationSeconds: 0.08, stepSize: 0.02);
 
         $trajectory = $parser->parse(goldenFixtureStdout(), $params, 'req-golden');
 

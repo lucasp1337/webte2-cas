@@ -30,17 +30,17 @@ uses(RefreshDatabase::class);
 function pendulumValidParams(): array
 {
     return [
-        'M' => 1.0,
-        'm' => 0.2,
-        'b' => 0.1,
-        'I' => 0.006,
-        'g' => 9.81,
-        'l' => 0.5,
-        'r' => 0.2,
-        'init_position' => 0.0,
-        'init_angle' => 0.15,
-        't_end' => 0.08,
-        'dt' => 0.02,
+        'cart_mass' => 1.0,
+        'pendulum_mass' => 0.2,
+        'friction' => 0.1,
+        'inertia' => 0.006,
+        'gravity' => 9.81,
+        'length' => 0.5,
+        'reference_position' => 0.2,
+        'initial_position' => 0.0,
+        'initial_angle' => 0.15,
+        'duration_seconds' => 0.08,
+        'step_size' => 0.02,
     ];
 }
 
@@ -103,7 +103,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when cart_mass is zero', function (): void {
         [, $key] = makePendulumApiKey('validMzero0');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['M' => 0]);
+        $params = array_merge(pendulumValidParams(), ['cart_mass' => 0]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -112,7 +112,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when pendulum_mass is negative', function (): void {
         [, $key] = makePendulumApiKey('validmneg0');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['m' => -1]);
+        $params = array_merge(pendulumValidParams(), ['pendulum_mass' => -1]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -121,7 +121,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when length is zero', function (): void {
         [, $key] = makePendulumApiKey('validlzero0');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['l' => 0]);
+        $params = array_merge(pendulumValidParams(), ['length' => 0]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -130,7 +130,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when gravity is negative', function (): void {
         [, $key] = makePendulumApiKey('validgneg00');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['g' => -9.81]);
+        $params = array_merge(pendulumValidParams(), ['gravity' => -9.81]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -139,7 +139,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when friction is negative', function (): void {
         [, $key] = makePendulumApiKey('validbneg00');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['b' => -0.1]);
+        $params = array_merge(pendulumValidParams(), ['friction' => -0.1]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -148,7 +148,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when inertia is zero', function (): void {
         [, $key] = makePendulumApiKey('validIzero0');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['I' => 0]);
+        $params = array_merge(pendulumValidParams(), ['inertia' => 0]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -157,7 +157,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when duration_seconds exceeds 30', function (): void {
         [, $key] = makePendulumApiKey('validtend00');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['t_end' => 31]);
+        $params = array_merge(pendulumValidParams(), ['duration_seconds' => 31]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -166,7 +166,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when duration_seconds is zero', function (): void {
         [, $key] = makePendulumApiKey('validtend01');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['t_end' => 0]);
+        $params = array_merge(pendulumValidParams(), ['duration_seconds' => 0]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -175,7 +175,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when step_size is below minimum', function (): void {
         [, $key] = makePendulumApiKey('validdtlow0');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['dt' => 0.0005]);
+        $params = array_merge(pendulumValidParams(), ['step_size' => 0.0005]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
@@ -184,7 +184,7 @@ describe('RunPendulumSimulationController', function (): void {
     it('returns 422 when step_size exceeds maximum', function (): void {
         [, $key] = makePendulumApiKey('validdthigh');
         bindFakePendulumBridge();
-        $params = array_merge(pendulumValidParams(), ['dt' => 0.6]);
+        $params = array_merge(pendulumValidParams(), ['step_size' => 0.6]);
 
         postJson('/api/v1/simulations/pendulum', ['parameters' => $params], ['X-API-Key' => $key])
             ->assertStatus(422);
