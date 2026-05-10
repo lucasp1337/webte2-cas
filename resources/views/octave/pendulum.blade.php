@@ -22,15 +22,22 @@ init_state = [{{ sprintf('%.15e', $continueFrom[0]) }};{{ sprintf('%.15e', $cont
 init_state = [{{ sprintf('%.15e', $p->initial_position) }};0;{{ sprintf('%.15e', $p->initial_angle) }};0];
 @endif
 [y,t,x] = lsim(sys, r*ones(size(t)), t, init_state);
+% Emit each matrix as one row per line via printf so the trajectory parser
+% sees a deterministic stream (disp() wraps wide matrices with
+% "Columns N through M:" headers that the parser cannot tokenise).
 disp('---T---');
-disp(t);
+printf('%.15e\n', t);
 disp('---END-T---');
 disp('---X---');
-disp(x);
+for __row = 1:rows(x)
+    printf('%.15e %.15e %.15e %.15e\n', x(__row,1), x(__row,2), x(__row,3), x(__row,4));
+endfor
 disp('---END-X---');
 disp('---THETA---');
-disp(y);
+for __row = 1:rows(y)
+    printf('%.15e %.15e\n', y(__row,1), y(__row,2));
+endfor
 disp('---END-THETA---');
 disp('---FINAL_STATE---');
-disp(x(end,:));
+printf('%.15e %.15e %.15e %.15e\n', x(end,1), x(end,2), x(end,3), x(end,4));
 disp('---END-FINAL_STATE---');
