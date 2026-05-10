@@ -10,18 +10,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
- * Stub — real handler ships in Phase 08.
+ * Stub — real handler ships in Phase 08 (PDF job delegation).
  */
 final class RequestApiDocsPdfController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $jobId = Str::ulid()->toBase32();
+        $exportId = Str::ulid()->toBase32();
 
         return response()->json([
-            'job_id' => $jobId,
+            'export_id' => $exportId,
             'status' => 'queued',
-            'poll_url' => route('v1.api-docs.pdf.download', ['id' => $jobId]),
+            'poll_url' => route('v1.api-docs.pdf.download', ['exportId' => $exportId]),
         ], 202);
     }
 }

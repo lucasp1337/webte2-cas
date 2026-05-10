@@ -9,14 +9,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Stub — real handler ships in Phase 08.
+ * Stub — real handler ships in Phase 08 (PDF job delegation).
  */
 final class DownloadApiDocsPdfController extends Controller
 {
-    public function __invoke(Request $request, string $id): JsonResponse
+    public function __invoke(Request $request, string $exportId): JsonResponse
     {
         return response()->json([
-            'job_id' => $id,
+            'export_id' => $exportId,
             'status' => 'queued',
         ], 202);
     }
