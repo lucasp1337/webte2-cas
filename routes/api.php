@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\OpenApiSpecController;
 use App\Http\Controllers\Api\V1\ClearOctaveSessionController;
 use App\Http\Controllers\Api\V1\DownloadApiDocsPdfController;
 use App\Http\Controllers\Api\V1\ExecuteOctaveCommandController;
@@ -15,6 +16,9 @@ use App\Http\Controllers\Api\V1\RunPendulumSimulationController;
 use App\Http\Controllers\Api\V1\StatsForAnimationController;
 use App\Http\Controllers\Api\V1\StatsSummaryController;
 use Illuminate\Support\Facades\Route;
+
+// Spec — public, no auth required so Swagger UI and curl can fetch without X-API-Key.
+Route::get('/openapi.json', OpenApiSpecController::class)->name('openapi.spec');
 
 // Public — no api-protected (no X-API-Key required).
 Route::get('/v1/health', HealthController::class)->name('v1.health');
@@ -37,8 +41,8 @@ Route::prefix('v1')->middleware('api-protected')->group(function (): void {
         ->name('v1.logs.export.poll');
 
     Route::post('/api-docs/pdf', RequestApiDocsPdfController::class)->name('v1.api-docs.pdf.request');
-    Route::get('/api-docs/pdf/{id}', DownloadApiDocsPdfController::class)
-        ->whereUlid('id')
+    Route::get('/api-docs/pdf/{exportId}', DownloadApiDocsPdfController::class)
+        ->whereUlid('exportId')
         ->name('v1.api-docs.pdf.download');
 
     Route::get('/stats', StatsSummaryController::class)->name('v1.stats.summary');
