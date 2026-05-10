@@ -23,6 +23,10 @@ type UseAnimationLoopResult = {
  * The hook owns the RAF loop but never owns trajectory data — it is a pure
  * timing primitive. The renderer and chart are siblings that both read
  * `cursorIndex` from the parent.
+ *
+ * `now` is injectable for tests (Vitest fake timers). Internally it is
+ * stored in a ref so changing the function reference between renders does not
+ * restart the RAF loop.
  */
 export function useAnimationLoop({
     frameCount,
@@ -30,14 +34,27 @@ export function useAnimationLoop({
     slowdownFactor,
     isPlaying,
     onComplete,
-    now = () => performance.now(),
+    now,
 }: UseAnimationLoopOptions): UseAnimationLoopResult {
     const [cursorIndex, setCursorIndex] = useState<number>(0);
 
-    // Use refs for values that the RAF callback closes over so we never
-    // restart the loop just because the callback identity changed.
+    // All values the RAF step closure reads are stored in refs so the effect
+    // only restarts when control parameters change (isPlaying, frameCount, etc.)
+    // rather than on every render.
     const onCompleteRef = useRef<(() => void) | undefined>(onComplete);
     onCompleteRef.current = onComplete;
+
+    const nowRef = useRef<() => number>(now ?? (() => performance.now()));
+    nowRef.current = now ?? (() => performance.now());
+
+    const stepSizeRef = useRef<number>(stepSizeSeconds);
+    stepSizeRef.current = stepSizeSeconds;
+
+    const slowdownRef = useRef<number>(slowdownFactor);
+    slowdownRef.current = slowdownFactor;
+
+    const frameCountRef = useRef<number>(frameCount);
+    frameCountRef.current = frameCount;
 
     const completedRef = useRef<boolean>(false);
 
@@ -46,18 +63,18 @@ export function useAnimationLoop({
 
         completedRef.current = false;
         let rafId = 0;
-        let lastWall = now();
+        let lastWall = nowRef.current();
         let simElapsed = 0;
 
         const step = (wallNow: number): void => {
             const delta = (wallNow - lastWall) / 1000; // seconds of real time
             lastWall = wallNow;
-            simElapsed += delta / slowdownFactor;
+            simElapsed += delta / slowdownRef.current;
 
-            const idx = Math.min(Math.floor(simElapsed / stepSizeSeconds), frameCount - 1);
+            const idx = Math.min(Math.floor(simElapsed / stepSizeRef.current), frameCountRef.current - 1);
             setCursorIndex(idx);
 
-            if (idx < frameCount - 1) {
+            if (idx < frameCountRef.current - 1) {
                 rafId = requestAnimationFrame(step);
             } else if (!completedRef.current) {
                 completedRef.current = true;
@@ -70,7 +87,10 @@ export function useAnimationLoop({
         return () => {
             cancelAnimationFrame(rafId);
         };
-    }, [isPlaying, frameCount, stepSizeSeconds, slowdownFactor, now]);
+        // isPlaying and frameCount are the only values that should restart the
+        // loop. The rest are read via refs so they stay current without
+        // triggering a new RAF cycle.
+    }, [isPlaying, frameCount]);
 
     return { cursorIndex, setCursorIndex };
 }
