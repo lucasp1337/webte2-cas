@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Actions\Pendulum;
+namespace App\Actions\BallBeam;
 
-use App\Data\PendulumParameters;
+use App\Data\BallBeamParameters;
 use App\Data\SimulationTrajectory;
 use App\Enums\AnimationName;
 use App\Events\SimulationStarted;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 
 /**
- * Runs the inverted-pendulum simulation and returns a parsed trajectory.
+ * Runs the ball-on-beam simulation and returns a parsed trajectory.
  *
  * Steps:
  *  1. Dispatch `SimulationStarted` BEFORE the bridge call so that the stats
@@ -28,7 +28,7 @@ use Illuminate\Support\Str;
  * `OctaveBridgeUnavailableException`) propagate to the controller for HTTP
  * status mapping.
  */
-final readonly class RunPendulumSimulation
+final readonly class RunBallBeamSimulation
 {
     public function __construct(
         private OctaveBridgeClient $bridge,
@@ -37,29 +37,32 @@ final readonly class RunPendulumSimulation
 
     /**
      * @param  list<float>|null  $continueFrom  Optional 4-element final state
-     *                                          [x, x_dot, theta, theta_dot]
+     *                                          [position, velocity, angle, angular_velocity]
      *                                          from a previous run.
      */
     public function handle(
-        PendulumParameters $parameters,
+        BallBeamParameters $parameters,
         ?array $continueFrom,
         string $anonToken,
         string $ip,
     ): SimulationTrajectory {
-        $parameterHash = md5(json_encode($parameters->toArray(), JSON_THROW_ON_ERROR));
+        $parameterHash = md5(
+            json_encode($parameters->toArray(), JSON_THROW_ON_ERROR).
+            json_encode($continueFrom ?? [], JSON_THROW_ON_ERROR),
+        );
 
         SimulationStarted::dispatch(
-            AnimationName::Pendulum,
+            AnimationName::BallBeam,
             $anonToken,
             $ip,
             $parameterHash,
         );
 
-        // Ephemeral session: 'sim-' prefix + ULID fits the bridge's session-id
+        // Ephemeral session: 'bb_' prefix + ULID fits the bridge's session-id
         // regex (8–64 alphanumeric+hyphen characters).
-        $sessionId = 'sim-'.Str::ulid();
+        $sessionId = 'bb_'.Str::ulid()->toBase32();
 
-        $script = View::make('octave.pendulum', [
+        $script = View::make('octave.ball-beam', [
             'p' => $parameters,
             'continueFrom' => $continueFrom ?? [],
         ])->render();
@@ -69,15 +72,12 @@ final readonly class RunPendulumSimulation
 
         // The finally block ensures the ephemeral session is always cleaned up,
         // even when the bridge throws. The exception re-propagates after cleanup.
-        // PHPStan understands that after a try/finally with no catch, variables
-        // assigned inside try are definitely initialised when execution continues
-        // past the block (an exception would have re-thrown).
         try {
             $result = $this->bridge->execute($sessionId, $script, $timeout);
         } finally {
             $this->bridge->clearSession($sessionId);
         }
 
-        return $this->parser->parsePendulum($result->stdout, $parameters, $result->requestId);
+        return $this->parser->parseBallBeam($result->stdout, $parameters, $result->requestId);
     }
 }

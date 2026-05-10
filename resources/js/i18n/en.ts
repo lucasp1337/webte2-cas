@@ -108,6 +108,37 @@ export const en: Translation = {
     ballBeam: {
         title: 'Ball on beam',
         subtitle: 'Animated simulation with state chart.',
+        form: {
+            title: 'Simulation parameters',
+            run: 'Run simulation',
+            running: 'Simulating…',
+            reset: 'Restore defaults',
+            restartWithNewR: 'Restart with new r',
+            fields: {
+                ball_mass: 'Ball mass m (kg)',
+                ball_radius: 'Ball radius R (m)',
+                inertia: 'Moment of inertia J (kg·m²)',
+                beam_length: 'Beam length (m)',
+                gravity: 'Gravity g (m/s²)',
+                reference_position: 'Reference position r (m)',
+                initial_position: 'Initial position (m)',
+                initial_velocity: 'Initial velocity (m/s)',
+                initial_angle: 'Initial angle (rad)',
+                duration_seconds: 'Simulation time (s)',
+                step_size: 'Step size dt (s)',
+            },
+        },
+        chart: {
+            title: 'Ball position and beam angle over time',
+            timeLabel: 'Time (s)',
+            positionLabel: 'Position (m)',
+            angleLabel: 'Beam angle (rad)',
+        },
+        tiltExaggerated: '(beam tilt exaggerated for clarity)',
+        errors: {
+            simulationFailed: 'Simulation failed',
+            unexpected: 'An unexpected error occurred. Please try again.',
+        },
     },
     logs: {
         title: 'Request logs',

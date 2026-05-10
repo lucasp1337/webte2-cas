@@ -1,0 +1,33 @@
+Hand-crafted synthetic fixture representing 5 samples (t=0..0.08, dt=0.02) of a
+ball-on-beam simulation with default gulicka.m parameters:
+  ball_mass=0.11, ball_radius=0.015, inertia=9.99e-6, beam_length=1.0,
+  gravity=9.81, reference_position=0.25, initial_position=0, initial_velocity=0,
+  initial_angle=0, duration_seconds=0.08, step_size=0.02.
+
+The format mirrors the real Octave stdout emitted by ball-beam.blade.php.
+Markers: T, POSITION, ANGLE, FINAL_STATE.
+State-vector ordering: [position, velocity, angle, angular_velocity].
+---T---
+   0.00000000000000000e+00
+   2.00000000000000011e-02
+   4.00000000000000008e-02
+   6.00000000000000005e-02
+   8.00000000000000017e-02
+---END-T---
+---POSITION---
+   0.00000000000000000e+00
+   2.50000000000000014e-04
+   1.00000000000000005e-03
+   2.25000000000000010e-03
+   4.00000000000000008e-03
+---END-POSITION---
+---ANGLE---
+   0.00000000000000000e+00
+   5.00000000000000028e-05
+   2.00000000000000011e-04
+   4.50000000000000021e-04
+   8.00000000000000017e-04
+---END-ANGLE---
+---FINAL_STATE---
+   4.00000000000000008e-03   2.00000000000000011e-01   8.00000000000000017e-04   8.00000000000000017e-02
+---END-FINAL_STATE---
