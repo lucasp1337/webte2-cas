@@ -146,19 +146,18 @@ paths:
             schema: { $ref: "#/components/schemas/BallBeamRequest" }
             example:
               parameters:
-                ball_mass: 0.05
-                ball_radius: 0.02
+                ball_mass: 0.11
+                ball_radius: 0.015
+                inertia: 0.00000999
                 beam_length: 1.0
                 gravity: 9.81
-                initial_position: 0.1
-                initial_velocity: 0.0
-                duration_seconds: 8.0
-                step_size: 0.02
-              control:
-                kind: "pid"
-                kp: 5.0
-                ki: 0.1
-                kd: 1.5
+                reference_position: 0.25
+                initial_position: 0
+                initial_velocity: 0
+                initial_angle: 0
+                duration_seconds: 5
+                step_size: 0.05
+              continue_from: null
       responses:
         "200":
           description: Simulation produced a trajectory.
@@ -614,23 +613,25 @@ components:
       properties:
         parameters:
           type: object
-          required: [ball_mass, ball_radius, beam_length, gravity, duration_seconds, step_size]
+          required: [ball_mass, ball_radius, inertia, beam_length, gravity, reference_position, initial_position, initial_velocity, initial_angle, duration_seconds, step_size]
           properties:
-            ball_mass: { type: number, exclusiveMinimum: 0 }
-            ball_radius: { type: number, exclusiveMinimum: 0 }
-            beam_length: { type: number, exclusiveMinimum: 0 }
-            gravity: { type: number, exclusiveMinimum: 0 }
-            initial_position: { type: number }
-            initial_velocity: { type: number }
-            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 30 }
-            step_size: { type: number, minimum: 0.001, maximum: 0.5 }
-        control:
-          type: object
-          properties:
-            kind: { type: string, enum: [open-loop, pid] }
-            kp: { type: number }
-            ki: { type: number }
-            kd: { type: number }
+            ball_mass: { type: number, exclusiveMinimum: 0, maximum: 100, description: "Ball mass (kg). Must be in (0, 100)." }
+            ball_radius: { type: number, exclusiveMinimum: 0, maximum: 1, description: "Ball radius (m). Must be in (0, 1)." }
+            inertia: { type: number, exclusiveMinimum: 0, maximum: 1, description: "Moment of inertia of the ball (kg·m²). Must be in (0, 1). Maps to J in gulicka.m." }
+            beam_length: { type: number, exclusiveMinimum: 0, maximum: 10, description: "Beam length (m). Must be in (0, 10). Used for renderer scaling." }
+            gravity: { type: number, exclusiveMinimum: 0, maximum: 30, description: "Gravitational acceleration (m/s²). Must be in (0, 30)." }
+            reference_position: { type: number, description: "Target ball position the controller drives toward (m). Any finite value." }
+            initial_position: { type: number, description: "Initial ball position on the beam (m). Any finite value." }
+            initial_velocity: { type: number, description: "Initial ball velocity (m/s). Any finite value." }
+            initial_angle: { type: number, description: "Initial beam angle (rad). Any finite value." }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 30, description: "Simulation duration (s). Must be in (0, 30]." }
+            step_size: { type: number, minimum: 0.001, maximum: 0.5, description: "Time step (s). Must be in [0.001, 0.5]." }
+        continue_from:
+          type: array
+          description: Optional [position, velocity, angle, angular_velocity] from a prior trajectory's final_state to continue the simulation from.
+          minItems: 4
+          maxItems: 4
+          items: { type: number }
 
     SimulationTrajectory:
       type: object
