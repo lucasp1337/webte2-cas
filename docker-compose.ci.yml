@@ -1,12 +1,32 @@
 # CI override: publishes the octave-bridge port to the runner's localhost so
 # PHP integration tests (running outside Docker on the GitHub-hosted runner)
-# can reach the bridge over HTTP. The bridge stays on the `octave_isolated`
-# network with `internal: true` for outbound egress; port publishing is
-# inbound only and does not break the no-egress guarantee.
+# can reach the bridge over HTTP.
+#
+# Root-cause context: the base docker-compose.yml puts octave-bridge ONLY on
+# `octave_isolated` (internal: true). Docker's `internal: true` prevents the
+# kernel from creating the NAT iptables rule that backs a published port — the
+# container healthcheck passes (it probes localhost inside the container) but
+# the host cannot connect on 0.0.0.0:8001. To publish a port to the host the
+# container must belong to at least one non-internal network.
+#
+# Fix: attach the bridge to `ci_host_access` (a plain bridge, no internal
+# flag) in addition to `octave_isolated`. Port 8001:8001 is then reachable
+# from the runner. The `octave_isolated` / `internal: true` egress guarantee
+# is unaffected because inter-container routing still goes via that network.
 #
 # Used in `.github/workflows/ci.yml` via:
 #   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d octave-bridge
+
 services:
   octave-bridge:
     ports:
       - "8001:8001"
+    networks:
+      octave_isolated: {}
+      ci_host_access: {}
+
+networks:
+  ci_host_access:
+    driver: bridge
+    # No internal: true — this network exists purely to allow port publishing
+    # from the container to the GitHub Actions runner host.

@@ -93,6 +93,15 @@ jobs:
           done
           docker inspect -f '{{.State.Health.Status}}' webte2-octave-bridge-1 | grep -q '^healthy$'
 
+      - name: Probe bridge port from runner host
+        # Verify the published port is actually reachable before running Pest.
+        # The container healthcheck only proves the bridge listens inside Docker;
+        # this step proves the host-side NAT rule is in place. Failing here gives
+        # a loud, actionable error instead of a silent "2 skipped" from Pest.
+        run: |
+          curl -fsS --retry 10 --retry-delay 1 --retry-connrefused \
+               http://localhost:8001/health
+
       - name: Run octave integration tests against live bridge
         env:
           OCTAVE_BRIDGE_URL: http://localhost:8001

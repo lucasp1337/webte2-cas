@@ -3,6 +3,7 @@ node_modules
 public/build
 storage
 bootstrap/cache
+docker/octave-bridge
 *.lock
 package-lock.json
 composer.lock

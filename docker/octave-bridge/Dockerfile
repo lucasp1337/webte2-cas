@@ -2,8 +2,20 @@
 FROM python:3.13-slim AS base
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends octave curl \
+ && apt-get install -y --no-install-recommends \
+      octave \
+      octave-control \
+      octave-signal \
+      curl \
  && rm -rf /var/lib/apt/lists/*
+
+# Auto-load Octave Forge packages on every interpreter start. The bridge's
+# `--no-init-file` flag skips per-user octaverc but NOT the system-site
+# octaverc — packages still load before user scripts. The sanitiser blocks
+# `pkg load` in user input as defence-in-depth (`pkg` is blocklisted), so
+# injecting it server-side here is the right place.
+RUN echo 'pkg load control;' >> /usr/share/octave/site/m/startup/octaverc \
+ && echo 'pkg load signal;'  >> /usr/share/octave/site/m/startup/octaverc
 
 WORKDIR /app
 

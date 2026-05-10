@@ -3,7 +3,9 @@ name: webte2
 services:
   nginx:
     image: nginx:1.27-alpine
-    ports: ["80:80"]
+    # Host port 8080 (not 80) to avoid colliding with apache2 / IIS on the host.
+    # nginx still listens on 80 inside the docker network for cli/web reachability.
+    ports: ["8080:80"]
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./public:/var/www/html/public:ro

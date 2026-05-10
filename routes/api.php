@@ -19,12 +19,16 @@ use Illuminate\Support\Facades\Route;
 // Public — no api-protected (no X-API-Key required).
 Route::get('/v1/health', HealthController::class)->name('v1.health');
 
+// Simulation routes extend api-protected with EnsureAnonTokenMiddleware so
+// the phase-09 stats listener has a stable anonymous token for cooldown.
+Route::prefix('v1/simulations')->middleware('api-simulation')->group(function (): void {
+    Route::post('/pendulum', RunPendulumSimulationController::class)->name('v1.simulations.pendulum');
+    Route::post('/ball-beam', RunBallBeamSimulationController::class)->name('v1.simulations.ball-beam');
+});
+
 Route::prefix('v1')->middleware('api-protected')->group(function (): void {
     Route::post('/octave/exec', ExecuteOctaveCommandController::class)->name('v1.octave.exec');
     Route::delete('/octave/session', ClearOctaveSessionController::class)->name('v1.octave.session.clear');
-
-    Route::post('/simulations/pendulum', RunPendulumSimulationController::class)->name('v1.simulations.pendulum');
-    Route::post('/simulations/ball-beam', RunBallBeamSimulationController::class)->name('v1.simulations.ball-beam');
 
     Route::get('/logs', ListRequestLogsController::class)->name('v1.logs.index');
     Route::get('/logs/export.csv', ExportRequestLogsCsvController::class)->name('v1.logs.export');

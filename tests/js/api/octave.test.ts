@@ -115,15 +115,42 @@ describe('createOctaveClient', () => {
         expect(outcome.status).toBe('timeout');
     });
 
-    it('classifies a network error as error with status 0', async () => {
+    it('classifies a network error as network_error with status 0', async () => {
         const fetcher = makeFetcher(() => Promise.reject(new Error('boom')));
 
         const client = createOctaveClient({ apiKey: 'k', fetcher });
         const outcome = await client.runCommand('1+1');
 
-        expect(outcome.status).toBe('error');
+        expect(outcome.status).toBe('network_error');
         expect(outcome.httpStatus).toBe(0);
         expect(outcome.payload).toBeNull();
+    });
+
+    it('classifies 401 as unauthorized', async () => {
+        const fetcher = makeFetcher(() =>
+            Promise.resolve(new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })),
+        );
+        const client = createOctaveClient({ apiKey: '', fetcher });
+        const outcome = await client.runCommand('1+1');
+        expect(outcome.status).toBe('unauthorized');
+    });
+
+    it('classifies 429 as rate_limited', async () => {
+        const fetcher = makeFetcher(() =>
+            Promise.resolve(new Response(JSON.stringify({ error: 'rate_limited' }), { status: 429 })),
+        );
+        const client = createOctaveClient({ apiKey: 'k', fetcher });
+        const outcome = await client.runCommand('1+1');
+        expect(outcome.status).toBe('rate_limited');
+    });
+
+    it('classifies 503 as bridge_unavailable', async () => {
+        const fetcher = makeFetcher(() =>
+            Promise.resolve(new Response(JSON.stringify({ error: 'bridge_unavailable' }), { status: 503 })),
+        );
+        const client = createOctaveClient({ apiKey: 'k', fetcher });
+        const outcome = await client.runCommand('1+1');
+        expect(outcome.status).toBe('bridge_unavailable');
     });
 
     it('clearSession returns true on 204', async () => {

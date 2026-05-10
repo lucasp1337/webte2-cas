@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Rules\ValidPendulumParameters;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class RunPendulumSimulationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Auth is handled by ApiKeyMiddleware.
+        // Authentication is handled upstream by ApiKeyMiddleware.
         return true;
     }
 
@@ -20,17 +22,25 @@ final class RunPendulumSimulationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'parameters' => ['required', 'array'],
-            'parameters.cart_mass' => ['required', 'numeric', 'gt:0'],
-            'parameters.pendulum_mass' => ['required', 'numeric', 'gt:0'],
-            'parameters.length' => ['required', 'numeric', 'gt:0'],
-            'parameters.gravity' => ['required', 'numeric', 'gt:0'],
-            'parameters.friction' => ['required', 'numeric', 'min:0'],
-            'parameters.initial_angle' => ['required', 'numeric'],
-            'parameters.duration_seconds' => ['required', 'numeric', 'gt:0', 'max:60'],
-            'parameters.step_size' => ['required', 'numeric', 'gt:0', 'max:1'],
-            'control' => ['nullable', 'array'],
-            'control.kind' => ['nullable', 'string', 'in:lqr,pid,none'],
+            'parameters' => ['required', 'array', new ValidPendulumParameters],
+            'continue_from' => ['nullable', 'array', 'size:4'],
+            // Laravel's `numeric` rule accepts the strings "Infinity", "INF",
+            // "NAN" and PHP's INF/NAN floats; sprintf turns them into valid
+            // Octave literals which then poison the simulation. Reject here.
+            'continue_from.*' => ['numeric', $this->finiteRule()],
         ];
+    }
+
+    private function finiteRule(): ValidationRule
+    {
+        return new class implements ValidationRule
+        {
+            public function validate(string $attribute, mixed $value, \Closure $fail): void
+            {
+                if (! is_numeric($value) || ! is_finite((float) $value)) {
+                    $fail("{$attribute} must be a finite number.");
+                }
+            }
+        };
     }
 }

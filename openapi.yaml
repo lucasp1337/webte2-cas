@@ -104,14 +104,15 @@ paths:
               parameters:
                 cart_mass: 1.0
                 pendulum_mass: 0.2
-                length: 0.5
-                gravity: 9.81
                 friction: 0.1
-                initial_angle: 0.15
+                inertia: 0.006
+                gravity: 9.81
+                length: 0.5
+                reference_position: 0.2
+                initial_position: 0.0
+                initial_angle: 0.0
                 duration_seconds: 10.0
                 step_size: 0.02
-              control:
-                kind: "lqr"
       responses:
         "200":
           description: Simulation produced a trajectory.
@@ -576,20 +577,36 @@ components:
       properties:
         parameters:
           type: object
-          required: [cart_mass, pendulum_mass, length, gravity, duration_seconds, step_size]
+          required:
+            - cart_mass
+            - pendulum_mass
+            - friction
+            - inertia
+            - gravity
+            - length
+            - reference_position
+            - initial_position
+            - initial_angle
+            - duration_seconds
+            - step_size
           properties:
             cart_mass: { type: number, exclusiveMinimum: 0 }
             pendulum_mass: { type: number, exclusiveMinimum: 0 }
-            length: { type: number, exclusiveMinimum: 0 }
-            gravity: { type: number, exclusiveMinimum: 0 }
             friction: { type: number, minimum: 0 }
+            inertia: { type: number, exclusiveMinimum: 0 }
+            gravity: { type: number, exclusiveMinimum: 0 }
+            length: { type: number, exclusiveMinimum: 0 }
+            reference_position: { type: number }
+            initial_position: { type: number }
             initial_angle: { type: number }
-            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 60 }
-            step_size: { type: number, exclusiveMinimum: 0, maximum: 0.1 }
-        control:
-          type: object
-          properties:
-            kind: { type: string, enum: [open-loop, lqr, pid] }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 30 }
+            step_size: { type: number, minimum: 0.001, maximum: 0.5 }
+        continue_from:
+          type: array
+          description: Optional [x, x_dot, theta, theta_dot] from a prior trajectory's final_state to continue the simulation from.
+          minItems: 4
+          maxItems: 4
+          items: { type: number }
 
     BallBeamRequest:
       type: object
@@ -605,8 +622,8 @@ components:
             gravity: { type: number, exclusiveMinimum: 0 }
             initial_position: { type: number }
             initial_velocity: { type: number }
-            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 60 }
-            step_size: { type: number, exclusiveMinimum: 0, maximum: 0.1 }
+            duration_seconds: { type: number, exclusiveMinimum: 0, maximum: 30 }
+            step_size: { type: number, minimum: 0.001, maximum: 0.5 }
         control:
           type: object
           properties:
