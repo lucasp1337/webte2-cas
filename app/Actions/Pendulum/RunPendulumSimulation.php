@@ -78,6 +78,6 @@ final readonly class RunPendulumSimulation
             $this->bridge->clearSession($sessionId);
         }
 
-        return $this->parser->parse($result->stdout, $parameters, $result->requestId);
+        return $this->parser->parsePendulum($result->stdout, $parameters, $result->requestId);
     }
 }

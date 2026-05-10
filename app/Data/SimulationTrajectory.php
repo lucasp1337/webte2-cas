@@ -10,20 +10,29 @@ use Spatie\LaravelData\Data;
 /**
  * Parsed trajectory returned from a single simulation run.
  *
- * `finalState` column ordering: [x, x_dot, theta, theta_dot]
+ * `finalState` column ordering for pendulum: [x, x_dot, theta, theta_dot]
  *   0 → cart position (x)
  *   1 → cart velocity (x_dot)
  *   2 → pendulum angle (theta)
  *   3 → pendulum angular velocity (theta_dot)
  *
- * This ordering matches the Octave state vector `[initPozicia; 0; initUhol; 0]`
- * and must be preserved when passing `finalState` as `continue_from` in the
- * next run.
+ * `finalState` column ordering for ball-beam: [position, velocity, angle, angular_velocity]
+ *   0 → ball position
+ *   1 → ball velocity
+ *   2 → beam angle
+ *   3 → beam angular velocity
+ *
+ * The ordering must be preserved when passing `finalState` as `continue_from`
+ * in the next run.
+ *
+ * `samples` shape varies by animation:
+ *   pendulum:  { t: float, x: float, theta: float }
+ *   ball-beam: { t: float, position: float, beam_angle: float }
  */
 final class SimulationTrajectory extends Data
 {
     /**
-     * @param  array<int, array{t: float, x: float, theta: float}>  $samples
+     * @param  array<int, array<string, float>>  $samples
      * @param  array{0: float, 1: float, 2: float, 3: float}  $finalState
      */
     public function __construct(

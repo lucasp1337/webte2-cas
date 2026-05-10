@@ -80,7 +80,7 @@ describe('TrajectoryParser', function (): void {
         $parser = app(TrajectoryParser::class);
         $params = parserTestParameters(durationSeconds: 0.08, stepSize: 0.02);
 
-        $trajectory = $parser->parse(goldenFixtureStdout(), $params, 'req-golden');
+        $trajectory = $parser->parsePendulum(goldenFixtureStdout(), $params, 'req-golden');
 
         // 5 samples: t=0, 0.02, 0.04, 0.06, 0.08
         expect($trajectory->samples)->toHaveCount(5);
@@ -113,7 +113,7 @@ describe('TrajectoryParser', function (): void {
             ---END-X---
             EOT;
 
-        expect(fn () => $parser->parse($truncated, parserTestParameters(), 'req-trunc'))
+        expect(fn () => $parser->parsePendulum($truncated, parserTestParameters(), 'req-trunc'))
             ->toThrow(OctaveBridgeUnavailableException::class);
     });
 
@@ -124,7 +124,7 @@ describe('TrajectoryParser', function (): void {
         // 3 T values but only 2 X rows
         $mismatched = syntheticStdout(rows: 2, tCount: 3);
 
-        expect(fn () => $parser->parse($mismatched, parserTestParameters(), 'req-mismatch'))
+        expect(fn () => $parser->parsePendulum($mismatched, parserTestParameters(), 'req-mismatch'))
             ->toThrow(OctaveBridgeUnavailableException::class);
     });
 
@@ -149,7 +149,7 @@ describe('TrajectoryParser', function (): void {
             ---END-FINAL_STATE---
             EOT;
 
-        $trajectory = $parser->parse($sciNotation, parserTestParameters(), 'req-sci');
+        $trajectory = $parser->parsePendulum($sciNotation, parserTestParameters(), 'req-sci');
 
         expect($trajectory->samples)->toHaveCount(2);
         expect(abs($trajectory->samples[0]['t'] - 0.0015))->toBeLessThan(1e-9);
@@ -162,7 +162,7 @@ describe('TrajectoryParser', function (): void {
 
         $withNan = syntheticStdout(rows: 3, nanInSamples: true);
 
-        expect(fn () => $parser->parse($withNan, parserTestParameters(), 'req-nan'))
+        expect(fn () => $parser->parsePendulum($withNan, parserTestParameters(), 'req-nan'))
             ->toThrow(OctaveBridgeUnavailableException::class);
     });
 });
