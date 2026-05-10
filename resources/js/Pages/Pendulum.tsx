@@ -12,6 +12,7 @@ import PendulumChart from '@/Components/pendulum/PendulumChart';
 import PendulumParameterForm from '@/Components/pendulum/PendulumParameterForm';
 import PlayerControls, { type PlayerState } from '@/Components/pendulum/PlayerControls';
 import { useAnimationLoop } from '@/hooks/useAnimationLoop';
+import { useElementWidth } from '@/hooks/useElementWidth';
 import { useT } from '@/hooks/useT';
 import AppLayout from '@/Layouts/AppLayout';
 
@@ -36,7 +37,8 @@ export type PendulumPageProps = {
 // Canvas dimensions
 // ---------------------------------------------------------------------------
 
-const CANVAS_WIDTH = 700;
+/** Fallback used until ResizeObserver has measured the actual container. */
+const CANVAS_WIDTH_FALLBACK = 700;
 const CANVAS_HEIGHT = 300;
 
 // ---------------------------------------------------------------------------
@@ -65,6 +67,9 @@ export default function Pendulum({ apiKey, slowdownFactor }: PendulumPageProps):
     const [playerState, setPlayerState] = useState<PlayerState>('idle');
     /** Most recent validated parameters — needed for "Restart with new r". */
     const [lastParameters, setLastParameters] = useState<PendulumParameters | null>(null);
+
+    /** Tracks the canvas-container width so the Konva stage fills its column. */
+    const { ref: canvasContainerRef, width: canvasWidth } = useElementWidth<HTMLDivElement>(CANVAS_WIDTH_FALLBACK);
 
     const frameCount = frames.length;
 
@@ -185,12 +190,12 @@ export default function Pendulum({ apiKey, slowdownFactor }: PendulumPageProps):
 
                 {/* Right — animation, controls, chart */}
                 <div className="flex flex-col gap-0">
-                    {/* Konva renderer */}
-                    <div className="overflow-hidden rounded-t-md border border-border">
+                    {/* Konva renderer — responsive to container width */}
+                    <div ref={canvasContainerRef} className="overflow-hidden rounded-t-md border border-border">
                         <Pendulum2D
                             frames={frames}
                             cursorIndex={cursorIndex}
-                            width={CANVAS_WIDTH}
+                            width={canvasWidth}
                             height={CANVAS_HEIGHT}
                             lengthMeters={lastParameters?.length ?? 0.5}
                         />
