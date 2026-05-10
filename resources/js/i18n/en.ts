@@ -147,6 +147,12 @@ export const en: Translation = {
     apiDocs: {
         title: 'API documentation',
         subtitle: 'OpenAPI specification in the browser and as a downloadable PDF.',
+        downloadPdf: 'Download PDF',
+        queueing: 'Queueing…',
+        generating: 'Generating PDF…',
+        renderFailed: 'PDF render failed.',
+        timeout: 'Render timed out — try again.',
+        unknownError: 'An unexpected error occurred.',
     },
     stats: {
         title: 'Usage statistics',

@@ -145,6 +145,12 @@ const skSource = {
     apiDocs: {
         title: 'API dokumentácia',
         subtitle: 'OpenAPI špecifikácia v prehliadači aj na stiahnutie ako PDF.',
+        downloadPdf: 'Stiahnuť PDF',
+        queueing: 'Vo fronte…',
+        generating: 'Generuje sa PDF…',
+        renderFailed: 'Vykreslenie PDF zlyhalo.',
+        timeout: 'Vykreslenie sa časovo prekročilo — skúste znova.',
+        unknownError: 'Nastala neočakávaná chyba.',
     },
     stats: {
         title: 'Štatistika použitia',
