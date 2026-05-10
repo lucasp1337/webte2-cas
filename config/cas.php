@@ -13,4 +13,5 @@ return [
     'request_log_retention_days' => (int) env('REQUEST_LOG_RETENTION_DAYS', 90),
     'csv_export_threshold' => (int) env('CSV_EXPORT_LARGE_THRESHOLD', 10000),
     'api_key_plaintext' => env('CAS_API_KEY_PLAINTEXT'),
+    'cas_slowdown_ms' => (int) env('CAS_SLOWDOWN_MS', 500),
 ];

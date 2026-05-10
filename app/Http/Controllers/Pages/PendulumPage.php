@@ -12,6 +12,20 @@ final class PendulumPage extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('Pendulum');
+        /** @var string|null $apiKey */
+        $apiKey = config('cas.api_key_plaintext');
+
+        // Slowdown factor: 1 = real-time, 2 = half speed, etc. Derived from
+        // CAS_SLOWDOWN_MS by treating the bridge command-throttle as a
+        // playback hint — every 500 ms of throttle slows simulation playback
+        // by 1×. Phase 10 may surface a dedicated env var if this proves coarse.
+        $slowdownMsRaw = config('cas.cas_slowdown_ms', 500);
+        $slowdownMs = is_numeric($slowdownMsRaw) ? (int) $slowdownMsRaw : 500;
+        $slowdownFactor = max(1, (int) round($slowdownMs / 500));
+
+        return Inertia::render('Pendulum', [
+            'apiKey' => $apiKey ?? '',
+            'slowdownFactor' => $slowdownFactor,
+        ]);
     }
 }
