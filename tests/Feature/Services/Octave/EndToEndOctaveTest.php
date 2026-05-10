@@ -48,7 +48,8 @@ function octaveBridgeReachable(): bool
 function shouldSkipIfBridgeDown(): bool
 {
     // GitHub Actions sets CI=true. Any truthy value disables the skip.
-    $isCI = filter_var(env('CI', false), FILTER_VALIDATE_BOOLEAN) === true;
+    // Use getenv() not env() — env() is banned outside config files by Larastan.
+    $isCI = filter_var(getenv('CI'), FILTER_VALIDATE_BOOLEAN) === true;
 
     if ($isCI) {
         return false;
