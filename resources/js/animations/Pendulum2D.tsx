@@ -2,19 +2,25 @@
 // using Three.js — the Pendulum2D and Pendulum3D renderers are interchangeable
 // via the AnimationRenderer<PendulumFrame> type; the page passes them as a prop.
 
-import { type ReactElement } from 'react';
-import { Circle, Layer, Line, Rect, Stage } from 'react-konva';
+import { type ReactElement, useMemo } from 'react';
+import { Circle, Layer, Line, Rect, Stage, Text } from 'react-konva';
 
 import type { AnimationRendererProps, PendulumFrame } from '@/animations/types';
 
-/** Width and height of the cart rectangle in pixels. */
+/** Width and height of the cart rectangle in pixels. Fixed; never scaled. */
 const CART_W = 60;
 const CART_H = 30;
 
 /** Radius of the pendulum bob in pixels. */
 const BOB_RADIUS = 12;
 
-/** Vertical margin above the bob and below the cart, in pixels. */
+/**
+ * Horizontal margin in pixels beyond the cart's outermost canvas position.
+ * Prevents the cart from touching the canvas edge when x is at its extreme.
+ */
+const HORIZ_MARGIN = 16;
+
+/** Vertical margin above the bob, in pixels. */
 const VERTICAL_PADDING = 16;
 
 /**
@@ -31,6 +37,7 @@ const COLOR_TRACK = 'var(--color-border)';
 const COLOR_CART = 'var(--color-primary)';
 const COLOR_ROD = 'var(--color-on-surface)';
 const COLOR_BOB = 'var(--color-secondary)';
+const COLOR_BADGE = 'var(--color-on-surface-muted)';
 
 type Pendulum2DProps = AnimationRendererProps<PendulumFrame> & {
     /**
@@ -67,6 +74,11 @@ function EmptyStage({ width, height }: EmptyStageProps): ReactElement {
  *
  * This is a pure component — it reads `frames[cursorIndex]` and renders.
  * It never owns the animation loop.
+ *
+ * Scale algorithm ("fit-bbox", Design C):
+ * Compute one pxPerM that fits BOTH the trajectory's horizontal extent AND
+ * the rod's vertical extent into the canvas with margin. The more constrained
+ * dimension wins. Memoised per trajectory so the scale is frozen during playback.
  */
 export default function Pendulum2D({
     frames,
@@ -77,18 +89,40 @@ export default function Pendulum2D({
 }: Pendulum2DProps): ReactElement {
     const frame = frames[cursorIndex];
 
-    if (frame === undefined) {
-        return <EmptyStage width={width} height={height} />;
-    }
+    // Compute a single pxPerM that fits both horizontal travel and rod length
+    // into the canvas. Memoised on the trajectory so the scale is stable during
+    // playback — a frame advancing cursorIndex does not retrigger this.
+    const pxPerM = useMemo(() => {
+        // originY lives inside the memo so it is not a captured outer variable,
+        // avoiding a redundant dep alongside `height` in the deps array.
+        const memoOriginY = height * CART_VERTICAL_FRACTION;
+
+        // Maximum absolute cart position across the whole trajectory.
+        const maxX = frames.length === 0 ? 0 : Math.max(...frames.map((f) => Math.abs(f.x)));
+
+        // Add a small floor to avoid division blow-up on zero-motion trajectories.
+        const horizontalReach = Math.max(maxX + 0.05, 0.05);
+        const verticalReach = Math.max(lengthMeters + 0.05, 0.05);
+
+        // How many px/m can the horizontal axis accommodate?
+        // Half-canvas minus half-cart minus the margin must cover horizontalReach.
+        const pxPerMByWidth = (width / 2 - CART_W / 2 - HORIZ_MARGIN) / horizontalReach;
+
+        // How many px/m can the vertical axis accommodate?
+        // Distance from memoOriginY up to where the bob tip sits (BOB_RADIUS + margin).
+        const pxPerMByHeight = (memoOriginY - BOB_RADIUS - VERTICAL_PADDING) / verticalReach;
+
+        // The more constrained axis wins; floor at 1 px/m to avoid degenerate renders.
+        return Math.max(1, Math.min(pxPerMByWidth, pxPerMByHeight));
+    }, [frames, lengthMeters, width, height]);
 
     // Place the cart in the lower portion so the upright rod has room above.
     const originY = height * CART_VERTICAL_FRACTION;
 
-    // Scale: pick PX_PER_M so the rod (when fully upright) fills the available
-    // vertical space above the cart, leaving room for the bob and a margin.
-    // Same scale applies to horizontal cart motion so distances stay in proportion.
-    const availableRodPx = originY - BOB_RADIUS - VERTICAL_PADDING;
-    const pxPerM = availableRodPx / Math.max(lengthMeters, 0.05);
+    if (frame === undefined) {
+        return <EmptyStage width={width} height={height} />;
+    }
+
     const rodPx = lengthMeters * pxPerM;
 
     // Cart centre x in canvas pixels.
@@ -113,6 +147,14 @@ export default function Pendulum2D({
                     <Line points={[cartCx, originY, bobX, bobY]} stroke={COLOR_ROD} strokeWidth={3} />
                     {/* Pendulum bob */}
                     <Circle x={bobX} y={bobY} radius={BOB_RADIUS} fill={COLOR_BOB} />
+                    {/* Scale badge — lower-left corner, muted, 11px */}
+                    <Text
+                        x={8}
+                        y={height - 18}
+                        text={`1 m ≈ ${Math.round(pxPerM).toString()} px`}
+                        fontSize={11}
+                        fill={COLOR_BADGE}
+                    />
                 </Layer>
             </Stage>
         </div>
