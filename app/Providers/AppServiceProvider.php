@@ -10,6 +10,8 @@ use App\Observers\ApiKeyObserver;
 use App\Observers\RequestLogObserver;
 use App\Services\Octave\HttpOctaveBridgeClient;
 use App\Services\Octave\OctaveBridgeClient;
+use App\Services\Pdf\BrowsershotPdfRenderer;
+use App\Services\Pdf\PdfRenderer;
 use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -36,6 +38,13 @@ final class AppServiceProvider extends ServiceProvider
                 baseUrl: $baseUrl,
                 timeoutSeconds: $timeoutSeconds,
             );
+        });
+
+        $this->app->bind(PdfRenderer::class, function (): BrowsershotPdfRenderer {
+            /** @var string $chromePath */
+            $chromePath = config('cas.browsershot_chrome_path', '/usr/bin/chromium');
+
+            return new BrowsershotPdfRenderer($chromePath);
         });
     }
 
