@@ -42,6 +42,22 @@ services:
       target: cli
     volumes:
       - .:/var/www/html
+    # Hardening: cli runs Horizon + Chromium-via-Browsershot. read_only:true
+    # would break Laravel's storage/, bootstrap/cache/, and similar bind-mount
+    # writes — instead we keep the rootfs writable via the bind mount but lock
+    # everything else down. Note: Chromium runs with --no-sandbox here (root
+    # PHP-FPM); these container-level controls are the load-bearing isolation.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.5'
     environment:
       CONTAINER_ROLE: cli
     env_file: .env
