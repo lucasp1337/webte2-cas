@@ -12,6 +12,10 @@ final class ApiDocsPage extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('ApiDocs');
+        $apiKey = config('cas.api_key_plaintext');
+
+        return Inertia::render('ApiDocs', [
+            'apiKey' => is_string($apiKey) ? $apiKey : '',
+        ]);
     }
 }
