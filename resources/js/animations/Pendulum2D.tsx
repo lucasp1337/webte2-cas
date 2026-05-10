@@ -2,10 +2,11 @@
 // using Three.js — the Pendulum2D and Pendulum3D renderers are interchangeable
 // via the AnimationRenderer<PendulumFrame> type; the page passes them as a prop.
 
-import { type ReactElement, useMemo } from 'react';
+import { type ReactElement } from 'react';
 import { Circle, Layer, Line, Rect, Stage, Text } from 'react-konva';
 
 import type { AnimationRendererProps, PendulumFrame } from '@/animations/types';
+import { useFitScale } from '@/hooks/useFitScale';
 
 /** Width and height of the cart rectangle in pixels. Fixed; never scaled. */
 const CART_W = 60;
@@ -90,31 +91,20 @@ export default function Pendulum2D({
     const frame = frames[cursorIndex];
 
     // Compute a single pxPerM that fits both horizontal travel and rod length
-    // into the canvas. Memoised on the trajectory so the scale is stable during
-    // playback — a frame advancing cursorIndex does not retrigger this.
-    const pxPerM = useMemo(() => {
-        // originY lives inside the memo so it is not a captured outer variable,
-        // avoiding a redundant dep alongside `height` in the deps array.
-        const memoOriginY = height * CART_VERTICAL_FRACTION;
-
-        // Maximum absolute cart position across the whole trajectory.
-        const maxX = frames.length === 0 ? 0 : Math.max(...frames.map((f) => Math.abs(f.x)));
-
-        // Add a small floor to avoid division blow-up on zero-motion trajectories.
-        const horizontalReach = Math.max(maxX + 0.05, 0.05);
-        const verticalReach = Math.max(lengthMeters + 0.05, 0.05);
-
-        // How many px/m can the horizontal axis accommodate?
-        // Half-canvas minus half-cart minus the margin must cover horizontalReach.
-        const pxPerMByWidth = (width / 2 - CART_W / 2 - HORIZ_MARGIN) / horizontalReach;
-
-        // How many px/m can the vertical axis accommodate?
-        // Distance from memoOriginY up to where the bob tip sits (BOB_RADIUS + margin).
-        const pxPerMByHeight = (memoOriginY - BOB_RADIUS - VERTICAL_PADDING) / verticalReach;
-
-        // The more constrained axis wins; floor at 1 px/m to avoid degenerate renders.
-        return Math.max(1, Math.min(pxPerMByWidth, pxPerMByHeight));
-    }, [frames, lengthMeters, width, height]);
+    // into the canvas. Delegated to useFitScale so the same algorithm is reusable
+    // for BallBeam2D — the extractor function selects the relevant frame field.
+    const pxPerM = useFitScale({
+        frames,
+        horizontalExtractor: (f) => f.x,
+        verticalReachMeters: lengthMeters,
+        width,
+        height,
+        originFraction: CART_VERTICAL_FRACTION,
+        horizontalMarginPx: HORIZ_MARGIN,
+        verticalPaddingPx: VERTICAL_PADDING,
+        cartHalfWidthPx: CART_W / 2,
+        bobRadiusPx: BOB_RADIUS,
+    });
 
     // Place the cart in the lower portion so the upright rod has room above.
     const originY = height * CART_VERTICAL_FRACTION;
