@@ -122,10 +122,10 @@ export default function BallBeam2D({
         originFraction: ORIGIN_FRACTION,
         horizontalMarginPx: HORIZ_MARGIN,
         verticalPaddingPx: VERTICAL_PADDING,
-        // No cart body for the beam renderer — the pivot is a point, so 0 px
-        // half-width avoids artificially shrinking the available canvas space.
-        cartHalfWidthPx: 0,
-        bobRadiusPx: BALL_RADIUS_PX,
+        // No fixed-size body anchored to the horizontal axis — the pivot is a
+        // point, so 0 px half-width avoids artificially shrinking the canvas.
+        horizontalBodyHalfPx: 0,
+        verticalBodyRadiusPx: BALL_RADIUS_PX,
     });
 
     const pivotX = width / 2;

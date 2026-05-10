@@ -22,10 +22,21 @@ type UseFitScaleOptions<TFrame> = {
     verticalPaddingPx?: number;
     /** Padding metres added to the trajectory bounding box (default 0.05). */
     paddingMeters?: number;
-    /** Horizontal pixel size of the cart half-width (default 30, half of 60). */
-    cartHalfWidthPx?: number;
-    /** Vertical pixel size of the bob radius (default 12). */
-    bobRadiusPx?: number;
+    /**
+     * Half-width (in pixels) of the body anchored to the horizontal axis —
+     * e.g. half of the pendulum cart, or 0 for the ball-beam (where no
+     * fixed-size body reserves horizontal canvas space). Required so each
+     * caller spells out its body geometry; no animation-specific defaults
+     * leak into the shared hook.
+     */
+    horizontalBodyHalfPx: number;
+    /**
+     * Radius (in pixels) of the body anchored to the vertical extreme —
+     * the pendulum bob, the ball on the beam, etc. Used to reserve vertical
+     * clearance above the origin. Required for the same reason as
+     * `horizontalBodyHalfPx`.
+     */
+    verticalBodyRadiusPx: number;
 };
 
 /**
@@ -52,8 +63,8 @@ export function useFitScale<TFrame>({
     horizontalMarginPx = 16,
     verticalPaddingPx = 16,
     paddingMeters = 0.05,
-    cartHalfWidthPx = 30,
-    bobRadiusPx = 12,
+    horizontalBodyHalfPx,
+    verticalBodyRadiusPx,
 }: UseFitScaleOptions<TFrame>): number {
     return useMemo(() => {
         // Maximum absolute horizontal position across the whole trajectory.
@@ -65,16 +76,16 @@ export function useFitScale<TFrame>({
         const horizontalReach = Math.max(maxX + paddingMeters, paddingMeters);
         const verticalReach = Math.max(verticalReachMeters + paddingMeters, paddingMeters);
 
-        // Origin Y in pixels — where the cart/origin sits vertically.
+        // Origin Y in pixels — where the body sits vertically.
         const originY = height * originFraction;
 
         // How many px/m can the horizontal axis accommodate?
-        // Half-canvas minus cart half-width minus the margin must cover horizontalReach.
-        const pxPerMByWidth = (width / 2 - cartHalfWidthPx - horizontalMarginPx) / horizontalReach;
+        // Half-canvas minus body half-width minus the margin must cover horizontalReach.
+        const pxPerMByWidth = (width / 2 - horizontalBodyHalfPx - horizontalMarginPx) / horizontalReach;
 
         // How many px/m can the vertical axis accommodate?
-        // Distance from originY up to where the bob tip sits (bobRadiusPx + verticalPaddingPx).
-        const pxPerMByHeight = (originY - bobRadiusPx - verticalPaddingPx) / verticalReach;
+        // Distance from originY up to where the body's vertical extreme sits.
+        const pxPerMByHeight = (originY - verticalBodyRadiusPx - verticalPaddingPx) / verticalReach;
 
         // The more constrained axis wins; floor at 1 px/m to avoid degenerate renders.
         return Math.max(1, Math.min(pxPerMByWidth, pxPerMByHeight));
@@ -88,7 +99,7 @@ export function useFitScale<TFrame>({
         horizontalMarginPx,
         verticalPaddingPx,
         paddingMeters,
-        cartHalfWidthPx,
-        bobRadiusPx,
+        horizontalBodyHalfPx,
+        verticalBodyRadiusPx,
     ]);
 }

@@ -102,8 +102,8 @@ export default function Pendulum2D({
         originFraction: CART_VERTICAL_FRACTION,
         horizontalMarginPx: HORIZ_MARGIN,
         verticalPaddingPx: VERTICAL_PADDING,
-        cartHalfWidthPx: CART_W / 2,
-        bobRadiusPx: BOB_RADIUS,
+        horizontalBodyHalfPx: CART_W / 2,
+        verticalBodyRadiusPx: BOB_RADIUS,
     });
 
     // Place the cart in the lower portion so the upright rod has room above.

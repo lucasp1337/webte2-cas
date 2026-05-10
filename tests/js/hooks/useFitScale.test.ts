@@ -19,6 +19,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames,
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters: 0.5,
                 width: WIDTH,
                 height: HEIGHT,
@@ -36,6 +38,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames,
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters: 0.5,
                 width: 0,
                 height: 0,
@@ -51,6 +55,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames: [] as PendulumFrame[],
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters: 0.5,
                 width: WIDTH,
                 height: HEIGHT,
@@ -76,6 +82,8 @@ describe('useFitScale', () => {
                 useFitScale({
                     frames,
                     horizontalExtractor: (f) => f.x,
+                    horizontalBodyHalfPx: 30,
+                    verticalBodyRadiusPx: 12,
                     verticalReachMeters: 0.5,
                     width: WIDTH,
                     height: HEIGHT,
@@ -97,6 +105,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames,
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters: 0.5,
                 width: WIDTH,
                 height: HEIGHT,
@@ -107,6 +117,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames,
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters: 0.5,
                 width: WIDTH,
                 height: HEIGHT,
@@ -122,7 +134,7 @@ describe('useFitScale', () => {
         const frames: PendulumFrame[] = [makeFrame(-maxX), makeFrame(maxX)];
 
         // Defaults: originFraction=0.85, horizontalMarginPx=16, paddingMeters=0.05,
-        // cartHalfWidthPx=30, bobRadiusPx=12, verticalPaddingPx=16
+        // horizontalBodyHalfPx=30, verticalBodyRadiusPx=12, verticalPaddingPx=16
         const paddingMeters = 0.05;
         const horizontalReach = maxX + paddingMeters;
         const expectedByWidth = (WIDTH / 2 - 30 - 16) / horizontalReach;
@@ -131,6 +143,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames,
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters: 0.5,
                 width: WIDTH,
                 height: HEIGHT,
@@ -146,7 +160,7 @@ describe('useFitScale', () => {
         const verticalReachMeters = 100;
         const frames: PendulumFrame[] = [makeFrame(0)];
 
-        // Defaults: originFraction=0.85, verticalPaddingPx=16, bobRadiusPx=12
+        // Defaults: originFraction=0.85, verticalPaddingPx=16, verticalBodyRadiusPx=12
         const paddingMeters = 0.05;
         const originY = HEIGHT * 0.85;
         const verticalReach = verticalReachMeters + paddingMeters;
@@ -156,6 +170,8 @@ describe('useFitScale', () => {
             useFitScale({
                 frames,
                 horizontalExtractor: (f) => f.x,
+                horizontalBodyHalfPx: 30,
+                verticalBodyRadiusPx: 12,
                 verticalReachMeters,
                 width: WIDTH,
                 height: HEIGHT,
