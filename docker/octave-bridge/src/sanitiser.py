@@ -43,6 +43,10 @@ FORBIDDEN_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("addpath", re.compile(r"\baddpath\b", re.IGNORECASE)),
     ("rmpath", re.compile(r"\brmpath\b", re.IGNORECASE)),
     ("shell escape (!)", re.compile(r"!")),
+    # exit/quit kill the subprocess but leave the .mat workspace untouched, so
+    # variables "reappear" on the next request.  Users who want to wipe their
+    # workspace should use the Clear Session button (DELETE /sessions/{id}).
+    ("exit/quit (use Clear Session)", re.compile(r"\b(?:exit|quit)\b", re.IGNORECASE)),
 )
 
 # Block-comment pattern: %{ ... %} (non-greedy, dotall so it spans lines).
