@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\AnimationUsage;
 use App\Models\ApiKey;
 use App\Models\RequestLog;
+use App\Observers\AnimationUsageObserver;
 use App\Observers\ApiKeyObserver;
 use App\Observers\RequestLogObserver;
 use App\Services\Octave\HttpOctaveBridgeClient;
@@ -64,6 +66,7 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        AnimationUsage::observe(AnimationUsageObserver::class);
         ApiKey::observe(ApiKeyObserver::class);
         RequestLog::observe(RequestLogObserver::class);
 
