@@ -6,6 +6,7 @@ import { type ReactElement } from 'react';
 import { Circle, Layer, Line, Rect, Stage, Text } from 'react-konva';
 
 import type { AnimationRendererProps, PendulumFrame } from '@/animations/types';
+import { useCssColors } from '@/hooks/useCssColors';
 import { useFitScale } from '@/hooks/useFitScale';
 
 /** Width and height of the cart rectangle in pixels. Fixed; never scaled. */
@@ -33,12 +34,18 @@ const CART_VERTICAL_FRACTION = 0.85;
 /** Fallback rod length in metres when the component receives no override. */
 const DEFAULT_LENGTH_M = 0.5;
 
-/** Colours expressed as CSS custom properties so they follow the theme. */
-const COLOR_TRACK = 'var(--color-border)';
-const COLOR_CART = 'var(--color-primary)';
-const COLOR_ROD = 'var(--color-on-surface)';
-const COLOR_BOB = 'var(--color-secondary)';
-const COLOR_BADGE = 'var(--color-on-surface-muted)';
+/**
+ * CSS custom property names — resolved at render time via `useCssColors`
+ * because Konva passes these strings straight to the canvas API, which does
+ * not understand `var(--foo)` and silently falls back to opaque black.
+ */
+const COLOR_TOKENS = {
+    track: '--border',
+    cart: '--on-surface',
+    rod: '--on-surface',
+    bob: '--accent',
+    badge: '--on-surface-muted',
+} as const;
 
 type Pendulum2DProps = AnimationRendererProps<PendulumFrame> & {
     /**
@@ -55,12 +62,13 @@ type EmptyStageProps = {
 };
 
 function EmptyStage({ width, height }: EmptyStageProps): ReactElement {
+    const colors = useCssColors(COLOR_TOKENS);
     const trackY = height * CART_VERTICAL_FRACTION;
     return (
         <div className="bg-surface-muted">
             <Stage width={width} height={height}>
                 <Layer>
-                    <Line points={[0, trackY, width, trackY]} stroke={COLOR_TRACK} strokeWidth={2} />
+                    <Line points={[0, trackY, width, trackY]} stroke={colors.track} strokeWidth={2} />
                 </Layer>
             </Stage>
         </div>
@@ -89,6 +97,7 @@ export default function Pendulum2D({
     lengthMeters = DEFAULT_LENGTH_M,
 }: Pendulum2DProps): ReactElement {
     const frame = frames[cursorIndex];
+    const colors = useCssColors(COLOR_TOKENS);
 
     // Compute a single pxPerM that fits both horizontal travel and rod length
     // into the canvas. Delegated to useFitScale so the same algorithm is reusable
@@ -130,20 +139,20 @@ export default function Pendulum2D({
             <Stage width={width} height={height}>
                 <Layer>
                     {/* Ground track */}
-                    <Line points={[0, originY, width, originY]} stroke={COLOR_TRACK} strokeWidth={2} />
+                    <Line points={[0, originY, width, originY]} stroke={colors.track} strokeWidth={2} />
                     {/* Cart body */}
-                    <Rect x={cartX} y={cartY} width={CART_W} height={CART_H} fill={COLOR_CART} cornerRadius={4} />
+                    <Rect x={cartX} y={cartY} width={CART_W} height={CART_H} fill={colors.cart} cornerRadius={4} />
                     {/* Pendulum rod */}
-                    <Line points={[cartCx, originY, bobX, bobY]} stroke={COLOR_ROD} strokeWidth={3} />
+                    <Line points={[cartCx, originY, bobX, bobY]} stroke={colors.rod} strokeWidth={3} />
                     {/* Pendulum bob */}
-                    <Circle x={bobX} y={bobY} radius={BOB_RADIUS} fill={COLOR_BOB} />
+                    <Circle x={bobX} y={bobY} radius={BOB_RADIUS} fill={colors.bob} />
                     {/* Scale badge — lower-left corner, muted, 11px */}
                     <Text
                         x={8}
                         y={height - 18}
                         text={`1 m ≈ ${Math.round(pxPerM).toString()} px`}
                         fontSize={11}
-                        fill={COLOR_BADGE}
+                        fill={colors.badge}
                     />
                 </Layer>
             </Stage>
