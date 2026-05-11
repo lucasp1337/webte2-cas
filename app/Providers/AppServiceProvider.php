@@ -16,6 +16,7 @@ use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use GeoIp2\Database\Reader;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -45,6 +46,16 @@ final class AppServiceProvider extends ServiceProvider
             $chromePath = config('cas.browsershot_chrome_path', '/usr/bin/chromium');
 
             return new BrowsershotPdfRenderer($chromePath);
+        });
+
+        $this->app->singleton(Reader::class, function (): ?Reader {
+            $path = config('cas.geolite_db_path', '');
+
+            if (! is_string($path) || $path === '') {
+                return null;
+            }
+
+            return is_file($path) ? new Reader($path) : null;
         });
     }
 
