@@ -73,4 +73,66 @@ final class RequestLogFactory extends Factory
             'success' => false,
         ]);
     }
+
+    /**
+     * State for an unauthorized request (401).
+     */
+    public function unauthorized(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 401,
+            'success' => false,
+        ]);
+    }
+
+    /**
+     * State for a validation failure request (422).
+     */
+    public function validationFailure(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 422,
+            'success' => false,
+        ]);
+    }
+
+    /**
+     * State for a bridge unavailable response (503).
+     */
+    public function bridgeUnavailable(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 503,
+            'success' => false,
+        ]);
+    }
+
+    /**
+     * State for an Octave exec request with a sample command payload.
+     */
+    public function octaveExec(): static
+    {
+        $commands = [
+            'A = [1 2; 3 4]; eig(A)',
+            'x = linspace(0, 2*pi, 100); sum(sin(x))',
+            'for i = 1:5; disp(i^2); end',
+            'M = magic(4); det(M)',
+            'syms t; diff(sin(t^2), t)',
+            'A = rand(3); inv(A)',
+            'fib = [1 1]; for k=3:10; fib(k)=fib(k-1)+fib(k-2); end; fib',
+            'x = 0:0.1:10; trapz(x, exp(-x))',
+        ];
+
+        return $this->state(function (array $attributes) use ($commands): array {
+            /** @var string $cmd */
+            $cmd = fake()->randomElement($commands);
+
+            return [
+                'route' => 'octave.exec',
+                'path' => '/api/v1/octave/exec',
+                'method' => 'POST',
+                'command' => substr($cmd, 0, 200),
+            ];
+        });
+    }
 }
