@@ -157,6 +157,27 @@ export const en: Translation = {
     stats: {
         title: 'Usage statistics',
         subtitle: 'Anonymous metrics on animation usage.',
+        last30Days: 'Last 30 days',
+        totalsTitle: 'Total runs',
+        perDayTitle: 'Runs per day',
+        topCountriesTitle: 'Top countries',
+        topCitiesTitle: 'Top cities',
+        columns: {
+            country: 'Country',
+            iso: 'ISO',
+            city: 'City',
+            count: 'Count',
+        },
+        tabs: {
+            summary: 'Summary',
+            pendulum: 'Inverted pendulum',
+            ballBeam: 'Ball on beam',
+        },
+        animations: {
+            pendulum: 'Inverted pendulum',
+            ballBeam: 'Ball on beam',
+        },
+        empty: 'No data available for this period.',
     },
     footer: {
         copyright: 'WEBTE2 — final assignment',

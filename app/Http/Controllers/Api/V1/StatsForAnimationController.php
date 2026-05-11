@@ -4,23 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Stats\AggregateUsageStats;
+use App\Enums\AnimationName;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Resources\AnimationStatsDetailResource;
 
-/**
- * Stub — real handler ships in Phase 09.
- */
 final class StatsForAnimationController extends Controller
 {
-    public function __invoke(Request $request, string $animation): JsonResponse
+    public function __construct(private readonly AggregateUsageStats $stats) {}
+
+    public function __invoke(AnimationName $animation): AnimationStatsDetailResource
     {
-        return response()->json([
-            'animation' => $animation,
-            'from' => null,
-            'to' => null,
-            'timeline' => [],
-            'geo' => [],
-        ]);
+        return AnimationStatsDetailResource::make(
+            $this->stats->handleForAnimation($animation),
+        );
     }
 }

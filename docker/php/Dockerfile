@@ -8,6 +8,7 @@ FROM php:8.5-fpm-bookworm AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git zip unzip libpng-dev libonig-dev libxml2-dev libicu-dev libzip-dev \
       default-mysql-client \
+      curl \
  && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd intl zip \
  && rm -rf /var/lib/apt/lists/*
 
@@ -57,6 +58,36 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium
+
+# ---------------------------------------------------------------------------
+# GeoLite2-City database bake-in (best-effort, build-time only)
+#
+# The MaxMind license key is passed as a BuildKit secret so it never appears
+# in image history or the final image's environment.  The file is placed at
+# /var/geolite/GeoLite2-City.mmdb, matching GEOLITE_DB_PATH in .env.example.
+#
+# Build with the secret:
+#   DOCKER_BUILDKIT=1 docker compose build \
+#     --secret id=geolite_license_key,env=GEOLITE_LICENSE_KEY web cli
+#
+# Build without a key (secret file absent or empty) — step is skipped silently
+# and the geo service degrades to returning "unknown" for all IPs until the
+# RefreshGeolocationDatabaseJob downloads the database at its next scheduled run.
+# ---------------------------------------------------------------------------
+RUN --mount=type=secret,id=geolite_license_key \
+    if [ -s /run/secrets/geolite_license_key ]; then \
+        KEY=$(cat /run/secrets/geolite_license_key) && \
+        mkdir -p /var/geolite && \
+        curl -sSL \
+            "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=${KEY}&suffix=tar.gz" \
+            -o /tmp/geolite.tar.gz && \
+        tar -xzf /tmp/geolite.tar.gz -C /tmp && \
+        find /tmp -name 'GeoLite2-City.mmdb' -exec mv {} /var/geolite/GeoLite2-City.mmdb \; && \
+        rm -rf /tmp/geolite.tar.gz /tmp/GeoLite2-City_* && \
+        chown -R www-data:www-data /var/geolite ; \
+    else \
+        echo "GeoLite2 secret not provided; skipping mmdb bake-in (geo service will degrade to unknown)" ; \
+    fi
 
 WORKDIR /var/www/html
 

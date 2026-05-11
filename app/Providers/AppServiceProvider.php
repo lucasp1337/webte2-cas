@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\AnimationUsage;
 use App\Models\ApiKey;
 use App\Models\RequestLog;
+use App\Observers\AnimationUsageObserver;
 use App\Observers\ApiKeyObserver;
 use App\Observers\RequestLogObserver;
 use App\Services\Octave\HttpOctaveBridgeClient;
@@ -16,6 +18,7 @@ use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use GeoIp2\Database\Reader;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -46,6 +49,16 @@ final class AppServiceProvider extends ServiceProvider
 
             return new BrowsershotPdfRenderer($chromePath);
         });
+
+        $this->app->bind(Reader::class, function (): ?Reader {
+            $path = config('cas.geolite_db_path', '');
+
+            if (! is_string($path) || $path === '') {
+                return null;
+            }
+
+            return is_file($path) ? new Reader($path) : null;
+        });
     }
 
     /**
@@ -53,6 +66,7 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        AnimationUsage::observe(AnimationUsageObserver::class);
         ApiKey::observe(ApiKeyObserver::class);
         RequestLog::observe(RequestLogObserver::class);
 

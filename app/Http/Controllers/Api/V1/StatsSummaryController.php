@@ -4,21 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Stats\AggregateUsageStats;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Resources\AnimationStatsResource;
 
-/**
- * Stub — real handler ships in Phase 09.
- */
 final class StatsSummaryController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __construct(private readonly AggregateUsageStats $aggregate) {}
+
+    public function __invoke(): AnimationStatsResource
     {
-        return response()->json([
-            'from' => null,
-            'to' => null,
-            'animations' => [],
-        ]);
+        return AnimationStatsResource::make($this->aggregate->handle());
     }
 }
