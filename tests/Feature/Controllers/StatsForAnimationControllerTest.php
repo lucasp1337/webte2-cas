@@ -31,12 +31,6 @@ afterEach(function (): void {
 });
 
 describe('StatsForAnimationController', function (): void {
-    // Guarantee a clean animation_usages table inside each test's transaction,
-    // regardless of what earlier test files may have committed or left behind.
-    beforeEach(function (): void {
-        AnimationUsage::query()->delete();
-    });
-
     it('returns 401 without an API key', function (): void {
         getJson('/api/v1/stats/pendulum')->assertStatus(401);
     });
@@ -60,7 +54,6 @@ describe('StatsForAnimationController', function (): void {
             ->assertJsonStructure([
                 'data' => [
                     'animation',
-                    'totals',
                     'per_day',
                     'top_countries',
                     'top_cities',
@@ -68,7 +61,7 @@ describe('StatsForAnimationController', function (): void {
             ]);
     });
 
-    it('returns only pendulum counts and excludes ball-beam rows', function (): void {
+    it('returns only pendulum per_day rows and excludes ball-beam rows', function (): void {
         [, $key] = makeAnimApiKey('filter000');
 
         AnimationUsage::factory()->pendulum()->count(3)->create([
@@ -81,8 +74,13 @@ describe('StatsForAnimationController', function (): void {
         $response = getJson('/api/v1/stats/pendulum', ['X-API-Key' => $key])
             ->assertStatus(200);
 
-        expect($response->json('data.totals.pendulum'))->toBe(3)
-            ->and($response->json('data.totals'))->not->toHaveKey('ball-beam');
+        // The detail endpoint is scoped to one animation — all per_day rows belong
+        // to pendulum. Ball-beam rows must not bleed through.
+        /** @var list<array{date: string, count: int}> $perDay */
+        $perDay = $response->json('data.per_day');
+        $total = array_sum(array_column($perDay, 'count'));
+        expect($total)->toBe(3)
+            ->and($response->json('data.animation'))->toBe('pendulum');
     });
 
     it('excludes rows older than 30 days', function (): void {
@@ -98,7 +96,10 @@ describe('StatsForAnimationController', function (): void {
         $response = getJson('/api/v1/stats/pendulum', ['X-API-Key' => $key])
             ->assertStatus(200);
 
-        expect($response->json('data.totals.pendulum'))->toBe(1);
+        /** @var list<array{date: string, count: int}> $perDay */
+        $perDay = $response->json('data.per_day');
+        $total = array_sum(array_column($perDay, 'count'));
+        expect($total)->toBe(1);
     });
 
     it('top_cities excludes rows with null city', function (): void {
@@ -131,7 +132,7 @@ describe('StatsForAnimationController', function (): void {
             ->assertJsonCount(0, 'data.top_cities');
     });
 
-    it('per_day entries contain date, animation, and count fields', function (): void {
+    it('per_day entries contain date and count fields', function (): void {
         [, $key] = makeAnimApiKey('perday000');
 
         AnimationUsage::factory()->ballBeam()->create([
@@ -143,7 +144,7 @@ describe('StatsForAnimationController', function (): void {
             ->assertJsonStructure([
                 'data' => [
                     'per_day' => [
-                        ['date', 'animation', 'count'],
+                        ['date', 'count'],
                     ],
                 ],
             ]);

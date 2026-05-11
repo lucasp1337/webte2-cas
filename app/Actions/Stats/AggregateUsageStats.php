@@ -29,11 +29,8 @@ final readonly class AggregateUsageStats
             ->groupBy('animation')
             ->get()
             ->mapWithKeys(function (\stdClass $row): array {
-                $animation = $row->animation;
-                $c = $row->c;
-
                 return [
-                    is_string($animation) ? $animation : '' => is_numeric($c) ? (int) $c : 0,
+                    $this->str($row, 'animation') => $this->int($row, 'c'),
                 ];
             })
             ->all();
@@ -44,41 +41,15 @@ final readonly class AggregateUsageStats
             ->groupBy('d', 'animation')
             ->orderBy('d')
             ->get()
-            ->map(function (\stdClass $row): array {
-                $d = $row->d;
-                $animation = $row->animation;
-                $c = $row->c;
-
-                return [
-                    'date' => is_string($d) ? $d : '',
-                    'animation' => is_string($animation) ? $animation : '',
-                    'count' => is_numeric($c) ? (int) $c : 0,
-                ];
-            })
+            ->map(fn (\stdClass $row): array => [
+                'date' => $this->str($row, 'd'),
+                'animation' => $this->str($row, 'animation'),
+                'count' => $this->int($row, 'c'),
+            ])
             ->values()
             ->all();
 
-        $topCountries = DB::table('animation_usages')
-            ->select('country_iso', 'country', DB::raw('count(*) as c'))
-            ->whereNotNull('country_iso')
-            ->where('started_at', '>=', $since)
-            ->groupBy('country_iso', 'country')
-            ->orderByDesc('c')
-            ->limit(self::TOP_COUNTRIES_LIMIT)
-            ->get()
-            ->map(function (\stdClass $row): array {
-                $countryIso = $row->country_iso;
-                $country = $row->country;
-                $c = $row->c;
-
-                return [
-                    'country_iso' => is_string($countryIso) ? $countryIso : '',
-                    'country' => is_string($country) ? $country : null,
-                    'count' => is_numeric($c) ? (int) $c : 0,
-                ];
-            })
-            ->values()
-            ->all();
+        $topCountries = $this->queryTopCountries($since, null);
 
         return [
             'totals' => $totals,
@@ -105,40 +76,14 @@ final readonly class AggregateUsageStats
             ->groupBy('d')
             ->orderBy('d')
             ->get()
-            ->map(function (\stdClass $row): array {
-                $d = $row->d;
-                $c = $row->c;
-
-                return [
-                    'date' => is_string($d) ? $d : '',
-                    'count' => is_numeric($c) ? (int) $c : 0,
-                ];
-            })
+            ->map(fn (\stdClass $row): array => [
+                'date' => $this->str($row, 'd'),
+                'count' => $this->int($row, 'c'),
+            ])
             ->values()
             ->all();
 
-        $topCountries = DB::table('animation_usages')
-            ->select('country_iso', 'country', DB::raw('count(*) as c'))
-            ->whereNotNull('country_iso')
-            ->where('started_at', '>=', $since)
-            ->where('animation', $value)
-            ->groupBy('country_iso', 'country')
-            ->orderByDesc('c')
-            ->limit(self::TOP_COUNTRIES_LIMIT)
-            ->get()
-            ->map(function (\stdClass $row): array {
-                $countryIso = $row->country_iso;
-                $country = $row->country;
-                $c = $row->c;
-
-                return [
-                    'country_iso' => is_string($countryIso) ? $countryIso : '',
-                    'country' => is_string($country) ? $country : null,
-                    'count' => is_numeric($c) ? (int) $c : 0,
-                ];
-            })
-            ->values()
-            ->all();
+        $topCountries = $this->queryTopCountries($since, $value);
 
         $topCities = DB::table('animation_usages')
             ->select('city', DB::raw('count(*) as c'))
@@ -149,15 +94,10 @@ final readonly class AggregateUsageStats
             ->orderByDesc('c')
             ->limit(self::TOP_CITIES_LIMIT)
             ->get()
-            ->map(function (\stdClass $row): array {
-                $city = $row->city;
-                $c = $row->c;
-
-                return [
-                    'city' => is_string($city) ? $city : null,
-                    'count' => is_numeric($c) ? (int) $c : 0,
-                ];
-            })
+            ->map(fn (\stdClass $row): array => [
+                'city' => $this->nullable($row, 'city'),
+                'count' => $this->int($row, 'c'),
+            ])
             ->values()
             ->all();
 
@@ -167,5 +107,59 @@ final readonly class AggregateUsageStats
             'top_countries' => $topCountries,
             'top_cities' => $topCities,
         ];
+    }
+
+    /**
+     * Shared top-countries query, optionally filtered to a single animation slug.
+     *
+     * @return array<int, array{country_iso: string, country: string|null, count: int}>
+     */
+    private function queryTopCountries(string $since, ?string $animationValue): array
+    {
+        $query = DB::table('animation_usages')
+            ->select('country_iso', 'country', DB::raw('count(*) as c'))
+            ->whereNotNull('country_iso')
+            ->where('started_at', '>=', $since)
+            ->groupBy('country_iso', 'country')
+            ->orderByDesc('c')
+            ->limit(self::TOP_COUNTRIES_LIMIT);
+
+        if ($animationValue !== null) {
+            $query->where('animation', $animationValue);
+        }
+
+        return $query
+            ->get()
+            ->map(fn (\stdClass $row): array => [
+                'country_iso' => $this->str($row, 'country_iso'),
+                'country' => $this->nullable($row, 'country'),
+                'count' => $this->int($row, 'c'),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** Coerce a stdClass column to a non-empty string (empty string as fallback). */
+    private function str(\stdClass $row, string $col): string
+    {
+        $val = $row->{$col};
+
+        return is_string($val) ? $val : '';
+    }
+
+    /** Coerce a stdClass column to int (0 as fallback). */
+    private function int(\stdClass $row, string $col): int
+    {
+        $val = $row->{$col};
+
+        return is_numeric($val) ? (int) $val : 0;
+    }
+
+    /** Coerce a stdClass column to string|null (null when absent or non-string). */
+    private function nullable(\stdClass $row, string $col): ?string
+    {
+        $val = $row->{$col};
+
+        return is_string($val) ? $val : null;
     }
 }

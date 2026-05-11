@@ -15,8 +15,7 @@ import { type ReactElement } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 
 import Card, { CardBody, CardHeader } from '@/Components/ui/Card';
-import { useT } from '@/hooks/useT';
-import { useLocale } from '@/hooks/useT';
+import { useLocale, useT } from '@/hooks/useT';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
 
