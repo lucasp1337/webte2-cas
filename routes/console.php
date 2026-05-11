@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Jobs\PruneStaleOctaveSessionsJob;
+use App\Jobs\RegenerateApiDocsCacheJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -18,3 +19,8 @@ Schedule::job(new PruneStaleOctaveSessionsJob($idleHours))
     ->dailyAt('02:00')
     ->name('prune-stale-octave-sessions')
     ->onOneServer();
+
+Schedule::job(new RegenerateApiDocsCacheJob)
+    ->dailyAt('04:00')
+    ->onOneServer()
+    ->name('regenerate-openapi-cache');

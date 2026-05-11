@@ -10,6 +10,12 @@ use App\Observers\ApiKeyObserver;
 use App\Observers\RequestLogObserver;
 use App\Services\Octave\HttpOctaveBridgeClient;
 use App\Services\Octave\OctaveBridgeClient;
+use App\Services\Pdf\BrowsershotPdfRenderer;
+use App\Services\Pdf\PdfRenderer;
+use Dedoc\Scramble\OpenApiContext;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -33,6 +39,13 @@ final class AppServiceProvider extends ServiceProvider
                 timeoutSeconds: $timeoutSeconds,
             );
         });
+
+        $this->app->bind(PdfRenderer::class, function (): BrowsershotPdfRenderer {
+            /** @var string $chromePath */
+            $chromePath = config('cas.browsershot_chrome_path', '/usr/bin/chromium');
+
+            return new BrowsershotPdfRenderer($chromePath);
+        });
     }
 
     /**
@@ -42,6 +55,14 @@ final class AppServiceProvider extends ServiceProvider
     {
         ApiKey::observe(ApiKeyObserver::class);
         RequestLog::observe(RequestLogObserver::class);
+
+        Scramble::extendOpenApi(function (OpenApi $openApi, OpenApiContext $context): void {
+            /** @var SecurityScheme $apiKeyScheme */
+            $apiKeyScheme = SecurityScheme::apiKey('header', 'X-API-Key');
+            /** @var SecurityScheme $namedScheme */
+            $namedScheme = $apiKeyScheme->as('ApiKeyAuth');
+            $openApi->secure($namedScheme);
+        });
 
         RateLimiter::for('cas-api', function (Request $request): Limit {
             /** @var ApiKey|null $apiKey */

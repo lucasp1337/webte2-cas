@@ -19,6 +19,45 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
+# Chromium for Browsershot (GenerateApiDocsPdfJob in the cli queue worker).
+# Installed in the base stage so both web and cli targets carry the binary;
+# only the cli worker actually invokes it.
+#
+# Package groups:
+#   chromium              — the headless browser Browsershot drives
+#   fonts-liberation      — Browsershot's recommended Latin fonts; avoids
+#                           glyph-fallback boxes in generated PDFs
+#   libnss3 libfreetype6  — native libs Chromium links at runtime on Debian
+#   libharfbuzz0b         — text-shaping library required by Chromium
+#   ca-certificates       — TLS root certs so Chromium can fetch same-origin
+#                           resources served over HTTPS inside the container
+#   libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1
+#   libxdamage1 libxfixes3 libxrandr2 libgbm1 libxshmfence1 libdrm2
+#   libpangocairo-1.0-0   — additional Chromium runtime deps absent from
+#                           the bookworm slim base layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      chromium \
+      fonts-liberation \
+      libnss3 \
+      libfreetype6 \
+      libharfbuzz0b \
+      ca-certificates \
+      libatk1.0-0 \
+      libatk-bridge2.0-0 \
+      libcups2 \
+      libxkbcommon0 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxfixes3 \
+      libxrandr2 \
+      libgbm1 \
+      libxshmfence1 \
+      libdrm2 \
+      libpangocairo-1.0-0 \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium
+
 WORKDIR /var/www/html
 
 # Source is volume-mounted in dev (see docker-compose.yml); production image will COPY in a later phase.
