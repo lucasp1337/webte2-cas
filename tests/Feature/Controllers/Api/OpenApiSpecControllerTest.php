@@ -61,3 +61,13 @@ it('declares the X-API-Key security scheme', function (): void {
     expect($schemes['ApiKeyAuth']['in'])->toBe('header');
     expect($schemes['ApiKeyAuth']['name'])->toBe('X-API-Key');
 });
+
+// TODO(phase-10): Scramble emits "string" as the /octave/exec response schema
+// because it cannot introspect through the controller's
+// OctaveExecutionResource::make(...)->response()->setStatusCode(...) chain.
+// Fix queued for next session — likely needs an `@response` Scramble
+// annotation on the controller method or a typed response macro. The
+// /octave/session DELETE 204 has the same root cause.
+it('documents the /octave/exec 200 response as a structured object with all six fields')->todo();
+
+it('documents the DELETE /octave/session as 204 No Content')->todo();

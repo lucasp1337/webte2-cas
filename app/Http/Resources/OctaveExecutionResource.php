@@ -26,7 +26,14 @@ final class OctaveExecutionResource extends JsonResource
     public static $wrap = null;
 
     /**
-     * @return array<string, mixed>
+     * @return array{
+     *     request_id: string,
+     *     stdout: string,
+     *     stderr: string,
+     *     exit_code: int,
+     *     duration_ms: int,
+     *     rejection_reason: string|null,
+     * }
      */
     public function toArray(Request $request): array
     {

@@ -15,6 +15,9 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 final class ClearOctaveSessionController extends Controller
 {
+    /**
+     * @response 204
+     */
     public function __invoke(ClearOctaveSessionRequest $request, OctaveBridgeClient $bridge): HttpResponse
     {
         /** @var string|null $sessionId */
