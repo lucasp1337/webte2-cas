@@ -24,6 +24,46 @@ logger = logging.getLogger(__name__)
 # Anchored pattern — rejects path-traversal attempts and shell metacharacters.
 SESSION_ID_PATTERN: re.Pattern[str] = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 
+# Exact text of the cosmetic noise line emitted by Octave's shutdown path when
+# packages loaded via the system octaverc (pkg load control; pkg load signal)
+# have destructors that throw during process exit.  The exit code is still 0 so
+# the command succeeded; the line is pure noise.
+#
+# Root cause: the `control` and `signal` Forge packages register C++ objects
+# whose destructors call into Octave's interpreter.  When the interpreter is
+# tearing itself down those calls throw a `const execution_exception&`.  Octave
+# catches it in main() and prints this message before returning 0.  Reported on
+# the Octave mailing list for multiple Octave versions; no upstream fix as of
+# Ubuntu 24.04 / Octave 8.x.
+#
+# Reference: this conversation (2026-05-11) and the bridge Dockerfile lines
+# 17-18 which add the `pkg load` lines to the system octaverc — that is exactly
+# why the message appears on every invocation.
+_SHUTDOWN_NOISE_LINE = "error: ignoring const execution_exception& while preparing to exit"
+
+
+def _strip_known_shutdown_noise(stderr: str) -> str:
+    """Remove the known Octave shutdown noise line from *stderr*.
+
+    Matches only the exact line text (with or without a trailing newline) so
+    that legitimate diagnostics containing those words are never silently
+    discarded.  If the result is blank after filtering, returns an empty string
+    with no stray newline.
+
+    Args:
+        stderr: Raw stderr string decoded from an Octave subprocess.
+
+    Returns:
+        Filtered stderr with the cosmetic shutdown line removed.
+    """
+    filtered = "\n".join(line for line in stderr.splitlines() if line != _SHUTDOWN_NOISE_LINE)
+    # splitlines() + join strips the trailing newline; restore it only when
+    # there is still content so we do not return a bare "\n" for empty output.
+    if filtered:
+        return filtered + "\n"
+    return ""
+
+
 SESSION_DIR: Path = Path(os.environ.get("SESSION_DIR", "/var/octave/sessions"))
 
 # Server-side throttle applied after each Octave call to slow down scripted
@@ -146,10 +186,12 @@ async def run_command(
         # real Octave time, not the artificial delay.
         await asyncio.sleep(SLOWDOWN_MS / 1000)
 
+    raw_stderr = stderr_bytes.decode("utf-8", errors="replace")
+
     return ExecResult(
         request_id="",  # filled by the HTTP handler from request_id_middleware
         stdout=stdout_bytes.decode("utf-8", errors="replace"),
-        stderr=stderr_bytes.decode("utf-8", errors="replace"),
+        stderr=_strip_known_shutdown_noise(raw_stderr),
         exit_code=exit_code,
         duration_ms=duration_ms,
     )
