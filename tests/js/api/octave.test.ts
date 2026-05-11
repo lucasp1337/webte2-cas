@@ -108,6 +108,179 @@ describe('parseWhosOutput', () => {
         const stdout = 'Total is 3 elements using 24 bytes\nsome garbage\n';
         expect(parseWhosOutput(stdout)).toEqual([]);
     });
+
+    it('parses a single 1x1 scalar row correctly', () => {
+        const stdout =
+            '  Attr Name        Size                     Bytes  Class\n' +
+            '  ==== ====        ====                     =====  =====\n' +
+            '       a           1x1                          8  double\n';
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ name: 'a', size: '1x1', class: 'double' });
+        expect(result[0]).not.toHaveProperty('attr');
+    });
+
+    it('parses mixed-type variables in a single table', () => {
+        const stdout = [
+            '  Attr Name        Size                     Bytes  Class',
+            '  ==== ====        ====                     =====  =====',
+            '       x           1x1                          8  double',
+            '       s           1x5                          5  char',
+            '       flag        1x1                          1  logical',
+            '       C           2x3                        192  cell',
+            '       st          1x1                        128  struct',
+            '',
+            'Total is 13 elements using 334 bytes',
+        ].join('\n');
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result).toHaveLength(5);
+        expect(result[0]).toMatchObject({ name: 'x', class: 'double' });
+        expect(result[1]).toMatchObject({ name: 's', class: 'char', size: '1x5' });
+        expect(result[2]).toMatchObject({ name: 'flag', class: 'logical', size: '1x1' });
+        expect(result[3]).toMatchObject({ name: 'C', class: 'cell', size: '2x3' });
+        expect(result[4]).toMatchObject({ name: 'st', class: 'struct', size: '1x1' });
+    });
+
+    it('captures the formal-arg attr flag', () => {
+        const stdout =
+            '  Attr Name        Size                     Bytes  Class\n' +
+            '  ==== ====        ====                     =====  =====\n' +
+            '  f    n           1x1                          8  double\n';
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ name: 'n', attr: 'f' });
+    });
+
+    it('captures rows with an unrecognised class without whitelisting', () => {
+        // The parser must not filter by class name — Octave can produce types
+        // the client code does not know about (int8, single, uint32, etc.).
+        const stdout =
+            '  Attr Name        Size                     Bytes  Class\n' +
+            '  ==== ====        ====                     =====  =====\n' +
+            '       i8val       1x1                          1  int8\n' +
+            '       sval        1x1                          4  single\n';
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result).toHaveLength(2);
+        expect(result[0]).toMatchObject({ name: 'i8val', class: 'int8' });
+        expect(result[1]).toMatchObject({ name: 'sval', class: 'single' });
+    });
+});
+
+describe('inspectWorkspace', () => {
+    function makeSuccessResponse(stdout: string): Response {
+        return new Response(
+            JSON.stringify({
+                request_id: 'r',
+                stdout,
+                stderr: '',
+                exit_code: 0,
+                duration_ms: 1,
+                rejection_reason: null,
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+    }
+
+    it('makes no disp calls when whos returns only non-scalar variables', async () => {
+        // A = magic(3) produces a 3x3 matrix — not 1x1, so no value fetch.
+        const fetcher = vi.fn<typeof fetch>(() =>
+            Promise.resolve(
+                makeSuccessResponse(
+                    '  Attr Name  Size  Bytes  Class\n' +
+                        '  ==== ====  ====  =====  =====\n' +
+                        '       A     3x3      72  double\n',
+                ),
+            ),
+        );
+
+        const client = createOctaveClient({ apiKey: 'k', fetcher });
+        const vars = await client.inspectWorkspace();
+
+        // Only 1 call for whos; no disp calls because A is 3x3.
+        expect(fetcher).toHaveBeenCalledTimes(1);
+        expect(vars).toHaveLength(1);
+        expect(vars[0]).toMatchObject({ name: 'A', size: '3x3', class: 'double' });
+        expect(vars[0]).not.toHaveProperty('value');
+    });
+
+    it('makes one disp call per scalar and populates value', async () => {
+        // a = 5; b = 7; — both 1x1 double scalars.
+        let callCount = 0;
+        const fetcher = vi.fn<typeof fetch>(() => {
+            callCount++;
+            if (callCount === 1) {
+                // First call: whos
+                return Promise.resolve(
+                    makeSuccessResponse(
+                        '  Attr Name  Size  Bytes  Class\n' +
+                            '  ==== ====  ====  =====  =====\n' +
+                            '       a     1x1       8  double\n' +
+                            '       b     1x1       8  double\n',
+                    ),
+                );
+            }
+            // Subsequent calls: disp(a) → "5", disp(b) → "7"
+            const dispValues: Record<number, string> = { 2: '5', 3: '7' };
+            return Promise.resolve(makeSuccessResponse(dispValues[callCount] ?? ''));
+        });
+
+        const client = createOctaveClient({ apiKey: 'k', fetcher });
+        const vars = await client.inspectWorkspace();
+
+        // 1 whos + 2 disp calls.
+        expect(fetcher).toHaveBeenCalledTimes(3);
+        expect(vars).toHaveLength(2);
+        expect(vars[0]).toMatchObject({ name: 'a', value: '5' });
+        expect(vars[1]).toMatchObject({ name: 'b', value: '7' });
+    });
+
+    it('leaves value absent for non-scalar variables alongside scalars', async () => {
+        // Mix: scalar a = 5 and matrix B = magic(3).
+        let callCount = 0;
+        const fetcher = vi.fn<typeof fetch>(() => {
+            callCount++;
+            if (callCount === 1) {
+                return Promise.resolve(
+                    makeSuccessResponse(
+                        '  Attr Name  Size  Bytes  Class\n' +
+                            '  ==== ====  ====  =====  =====\n' +
+                            '       B     3x3      72  double\n' +
+                            '       a     1x1       8  double\n',
+                    ),
+                );
+            }
+            // disp(a) — only one scalar fetch
+            return Promise.resolve(makeSuccessResponse('5'));
+        });
+
+        const client = createOctaveClient({ apiKey: 'k', fetcher });
+        const vars = await client.inspectWorkspace();
+
+        expect(fetcher).toHaveBeenCalledTimes(2);
+        const B = vars.find((v) => v.name === 'B');
+        const a = vars.find((v) => v.name === 'a');
+        expect(B).not.toHaveProperty('value');
+        expect(a).toMatchObject({ value: '5' });
+    });
+
+    it('returns an empty array when whos itself fails', async () => {
+        const fetcher = vi.fn<typeof fetch>(() =>
+            Promise.resolve(new Response(JSON.stringify({ error: 'bridge_unavailable' }), { status: 503 })),
+        );
+
+        const client = createOctaveClient({ apiKey: 'k', fetcher });
+        const vars = await client.inspectWorkspace();
+
+        expect(vars).toEqual([]);
+    });
 });
 
 describe('createOctaveClient', () => {

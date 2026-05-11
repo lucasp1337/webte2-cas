@@ -66,6 +66,21 @@ def test_partial_match_not_stripped() -> None:
     assert _NOISE in result
 
 
+def test_strip_repeated_noise_lines_all_removed() -> None:
+    # Octave could emit the noise line more than once if multiple destructors
+    # fire during the same shutdown. Every instance must be removed.
+    repeated = (_NOISE + "\n") * 3
+    assert _strip_known_shutdown_noise(repeated) == ""
+
+
+def test_strip_repeated_noise_with_real_diagnostic_keeps_diagnostic() -> None:
+    real = "error: undefined symbol 'y'\n"
+    blob = _NOISE + "\n" + real + _NOISE + "\n"
+    result = _strip_known_shutdown_noise(blob)
+    assert _NOISE not in result
+    assert "undefined symbol" in result
+
+
 # ---------------------------------------------------------------------------
 # Mock-subprocess integration: runner applies filter to real-shaped output
 # ---------------------------------------------------------------------------

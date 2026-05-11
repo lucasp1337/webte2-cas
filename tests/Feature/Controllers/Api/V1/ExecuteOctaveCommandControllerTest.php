@@ -113,3 +113,35 @@ it('returns 401 without an X-API-Key', function (): void {
     bindFakeBridge();
     postJson('/api/v1/octave/exec', ['command' => '1+1'])->assertStatus(401);
 });
+
+describe('stderr passthrough', function (): void {
+    it('returns empty stderr on a trivial assignment when the bridge filters shutdown noise', function (): void {
+        // The bridge strips the known Octave shutdown noise before returning to the
+        // controller; here we simulate that post-fix contract — the fake returns
+        // clean empty stderr, and the controller must echo it verbatim.
+        [, $plaintext] = makeOctaveApiKey('stderrclean');
+        $fake = bindFakeBridge();
+        $fake->setNextResult(new OctaveExecutionResult('req-1', '', '', 0, 95));
+
+        postJson('/api/v1/octave/exec', ['command' => 'a = 5;'], ['X-API-Key' => $plaintext])
+            ->assertStatus(200)
+            ->assertJsonPath('stderr', '')
+            ->assertJsonPath('exit_code', 0)
+            ->assertJsonPath('stdout', '');
+    });
+
+    it('does not strip arbitrary stderr text — the controller is not a filter', function (): void {
+        // The stripping is the bridge's responsibility. If the bridge returns real
+        // diagnostic text the controller must echo it unchanged so the UI can surface
+        // it to the user. This test guards against a regression where someone adds a
+        // second, wrong-layer filter inside the controller or action.
+        [, $plaintext] = makeOctaveApiKey('stderrreal0');
+        $fake = bindFakeBridge();
+        $fake->setNextResult(new OctaveExecutionResult('req-2', '', 'error: something real happened', 1, 20));
+
+        postJson('/api/v1/octave/exec', ['command' => 'undefined_var'], ['X-API-Key' => $plaintext])
+            ->assertStatus(200)
+            ->assertJsonPath('stderr', 'error: something real happened')
+            ->assertJsonPath('exit_code', 1);
+    });
+});
