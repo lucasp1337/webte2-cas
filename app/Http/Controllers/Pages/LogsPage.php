@@ -12,6 +12,15 @@ final class LogsPage extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('Logs');
+        /** @var string|null $apiKey */
+        $apiKey = config('cas.api_key_plaintext');
+
+        return Inertia::render('Logs', [
+            // Plaintext key is intentionally surfaced to the browser so the
+            // bilingual UI can call the protected /api/v1 routes without a
+            // dedicated session-only auth path. In production the key is
+            // rotated via `php artisan cas:create-key`.
+            'apiKey' => $apiKey ?? '',
+        ]);
     }
 }
