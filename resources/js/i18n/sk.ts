@@ -155,6 +155,28 @@ const skSource = {
     stats: {
         title: 'Štatistika použitia',
         subtitle: 'Anonymné metriky o použití animácií.',
+        last30Days: 'Posledných 30 dní',
+        totalsTitle: 'Celkový počet spustení',
+        perDayTitle: 'Spustenia za deň',
+        topCountriesTitle: 'Najčastejšie krajiny',
+        topCitiesTitle: 'Najčastejšie mestá',
+        columns: {
+            country: 'Krajina',
+            iso: 'ISO',
+            city: 'Mesto',
+            count: 'Počet',
+        },
+        tabs: {
+            summary: 'Prehľad',
+            pendulum: 'Inverzné kyvadlo',
+            ballBeam: 'Gulička na tyči',
+        },
+        animations: {
+            // TODO(i18n): verify natural Slovak names with a native speaker
+            pendulum: 'Inverzné kyvadlo',
+            ballBeam: 'Gulička na tyči',
+        },
+        empty: 'Za toto obdobie nie sú dostupné žiadne dáta.',
     },
     footer: {
         copyright: 'WEBTE2 — záverečné zadanie',
