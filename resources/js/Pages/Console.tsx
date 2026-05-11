@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { createOctaveClient, type OctaveClient } from '@/api/octave';
+import { createOctaveClient, type OctaveClient, type WorkspaceVariable } from '@/api/octave';
 import OctaveEditor from '@/Components/console/OctaveEditor';
 import OutputPanel, { type ConsoleEntry } from '@/Components/console/OutputPanel';
 import VariableSidebar from '@/Components/console/VariableSidebar';
@@ -26,7 +26,7 @@ export default function Console({ apiKey, client }: ConsoleProps) {
     const t = useT();
     const [code, setCode] = useState<string>('');
     const [entries, setEntries] = useState<ConsoleEntry[]>([]);
-    const [variables, setVariables] = useState<string[]>([]);
+    const [variables, setVariables] = useState<WorkspaceVariable[]>([]);
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [isClearing, setIsClearing] = useState<boolean>(false);
 
@@ -47,7 +47,7 @@ export default function Console({ apiKey, client }: ConsoleProps) {
             };
             setEntries((prev) => [...prev, entry]);
             if (outcome.status === 'success') {
-                const names = await octaveClient.listVariables();
+                const names = await octaveClient.inspectWorkspace();
                 setVariables(names);
                 setCode('');
             }

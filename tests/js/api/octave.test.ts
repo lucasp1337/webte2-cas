@@ -1,6 +1,6 @@
 import type { Mock } from 'vitest';
 
-import { createOctaveClient, parseExecutionPayload, parseWhoOutput } from '@/api/octave';
+import { createOctaveClient, parseExecutionPayload, parseWhoOutput, parseWhosOutput } from '@/api/octave';
 
 function makeFetcher(impl: typeof fetch): Mock<typeof fetch> {
     return vi.fn<typeof fetch>(impl);
@@ -45,6 +45,68 @@ describe('parseWhoOutput', () => {
         const stdout = 'a a 1bad foo\n';
 
         expect(parseWhoOutput(stdout)).toEqual(['a', 'foo']);
+    });
+});
+
+describe('parseWhosOutput', () => {
+    it('returns an empty list for empty stdout', () => {
+        expect(parseWhosOutput('')).toEqual([]);
+    });
+
+    it('returns an empty list when only the header is present', () => {
+        const stdout = 'Variables visible from the current scope:\n\nvariables in scope: top scope\n';
+        expect(parseWhosOutput(stdout)).toEqual([]);
+    });
+
+    it('parses a typical whos table with multiple variables', () => {
+        const stdout = [
+            'Variables visible from the current scope:',
+            '',
+            'variables in scope: top scope',
+            '',
+            '  Attr Name        Size                     Bytes  Class',
+            '  ==== ====        ====                     =====  =====',
+            '       A           3x3                         72  double',
+            '       b           3x1                         24  double',
+            '       x           1x1                          8  double',
+            '',
+            'Total is 15 elements using 120 bytes',
+        ].join('\n');
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result).toHaveLength(3);
+        expect(result[0]).toMatchObject({ name: 'A', size: '3x3', class: 'double' });
+        expect(result[1]).toMatchObject({ name: 'b', size: '3x1', class: 'double' });
+        expect(result[2]).toMatchObject({ name: 'x', size: '1x1', class: 'double' });
+    });
+
+    it('captures attribute flags when present', () => {
+        const stdout =
+            '  Attr Name        Size                     Bytes  Class\n' +
+            '  ==== ====        ====                     =====  =====\n' +
+            '  c    z           1x1                         16  complex\n';
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ name: 'z', size: '1x1', class: 'complex', attr: 'c' });
+    });
+
+    it('does not set attr when the attr column is empty', () => {
+        const stdout =
+            '  Attr Name        Size                     Bytes  Class\n' +
+            '  ==== ====        ====                     =====  =====\n' +
+            '       a           1x1                          8  double\n';
+
+        const result = parseWhosOutput(stdout);
+
+        expect(result[0]).not.toHaveProperty('attr');
+    });
+
+    it('ignores lines that do not match the row pattern', () => {
+        const stdout = 'Total is 3 elements using 24 bytes\nsome garbage\n';
+        expect(parseWhosOutput(stdout)).toEqual([]);
     });
 });
 
