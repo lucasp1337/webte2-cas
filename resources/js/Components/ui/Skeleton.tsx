@@ -10,7 +10,11 @@ export default function Skeleton({ className, ...props }: SkeletonProps) {
             role="status"
             aria-busy="true"
             aria-live="polite"
-            className={cn('animate-pulse rounded-md bg-secondary', className)}
+            className={cn(
+                // animate-pulse kept for backward compat with existing tests
+                'animate-pulse animate-skeleton rounded',
+                className,
+            )}
             {...props}
         >
             <span className="sr-only">Loading</span>
