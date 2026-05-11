@@ -31,12 +31,6 @@ afterEach(function (): void {
 });
 
 describe('StatsSummaryController', function (): void {
-    // Guarantee a clean animation_usages table inside each test's transaction,
-    // regardless of what earlier test files may have committed or left behind.
-    beforeEach(function (): void {
-        AnimationUsage::query()->delete();
-    });
-
     it('returns 401 without an API key', function (): void {
         getJson('/api/v1/stats')->assertStatus(401);
     });
