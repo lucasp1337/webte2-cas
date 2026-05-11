@@ -33,6 +33,32 @@ export const en: Translation = {
     home: {
         title: 'WEBTE2 — Octave CAS',
         subtitle: 'Web front-end for GNU Octave: console, simulations, statistics.',
+        tag: 'Octave-as-a-service',
+        version: 'v1.0.0',
+        tagline: 'An Octave-backed CAS web application with visual simulations and a typed REST API.',
+        cta: 'Open the console',
+        ctaSecondary: 'Read the API docs',
+        featuresEyebrow: 'Three surfaces',
+        quickStartEyebrow: 'Quick start',
+        quickStartTitle: 'Hit the API straight from your terminal',
+        quickStartRef: 'Full API reference',
+        features: {
+            console: {
+                label: '/console',
+                title: 'Octave console',
+                desc: 'Execute Octave commands directly from your browser with a persistent session.',
+            },
+            simulations: {
+                label: '/pendulum',
+                title: 'Simulations',
+                desc: 'Interactive control-systems simulations: inverted pendulum and ball on beam.',
+            },
+            api: {
+                label: '/api-docs',
+                title: 'REST API',
+                desc: 'Strongly-typed endpoints with OpenAPI and a downloadable PDF reference.',
+            },
+        },
     },
     console: {
         title: 'Octave console',
@@ -181,6 +207,7 @@ export const en: Translation = {
     },
     footer: {
         copyright: 'WEBTE2 — final assignment',
+        academic: 'Academic project',
     },
     errors: {
         required: 'This field is required',

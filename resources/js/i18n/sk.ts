@@ -31,6 +31,32 @@ const skSource = {
     home: {
         title: 'WEBTE2 — Octave CAS',
         subtitle: 'Webový front-end pre GNU Octave: konzola, simulácie, štatistiky.',
+        tag: 'Octave ako služba',
+        version: 'v1.0.0',
+        tagline: 'Webová aplikácia na báze Octave s vizualizovanými simuláciami a typovým REST API.',
+        cta: 'Otvoriť konzolu',
+        ctaSecondary: 'Zobraziť API dokumentáciu',
+        featuresEyebrow: 'Tri rozhrania',
+        quickStartEyebrow: 'Rýchly štart',
+        quickStartTitle: 'Zavolajte API priamo z terminálu',
+        quickStartRef: 'Plné API ref',
+        features: {
+            console: {
+                label: '/console',
+                title: 'Octave konzola',
+                desc: 'Vykonávajte príkazy Octave priamo z prehliadača s perzistentnou reláciou.',
+            },
+            simulations: {
+                label: '/pendulum',
+                title: 'Simulácie',
+                desc: 'Interaktívne ovládacie simulácie: inverzné kyvadlo a gulička na tyči.',
+            },
+            api: {
+                label: '/api-docs',
+                title: 'REST API',
+                desc: 'Typovo bezpečné endpointy s OpenAPI a stiahnuteľnou PDF dokumentáciou.',
+            },
+        },
     },
     console: {
         title: 'Octave konzola',
@@ -180,6 +206,7 @@ const skSource = {
     },
     footer: {
         copyright: 'WEBTE2 — záverečné zadanie',
+        academic: 'Akademický projekt',
     },
     errors: {
         required: 'Toto pole je povinné',
