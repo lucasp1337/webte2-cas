@@ -25,7 +25,7 @@ final readonly class GeolocationService
             return GeolocationResult::unknown();
         }
 
-        if ($this->isPrivateIp($ip)) {
+        if ($this->shouldSkipLookup($ip)) {
             return GeolocationResult::unknown();
         }
 
@@ -42,7 +42,11 @@ final readonly class GeolocationService
         }
     }
 
-    private function isPrivateIp(string $ip): bool
+    /**
+     * Returns true for private, reserved, loopback, or malformed IPs.
+     * These should not be sent to the GeoIP2 database.
+     */
+    private function shouldSkipLookup(string $ip): bool
     {
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }

@@ -76,8 +76,6 @@ final class AnimationUsage extends Model
     /**
      * Filter rows whose started_at falls within the given half-open interval [$from, $to].
      *
-     * Note: spatie/period is not installed; using CarbonImmutable boundaries directly.
-     *
      * @param  Builder<static>  $q
      */
     public function scopeWithinPeriod(Builder $q, CarbonImmutable $from, CarbonImmutable $to): void

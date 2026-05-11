@@ -50,7 +50,7 @@ final class AppServiceProvider extends ServiceProvider
             return new BrowsershotPdfRenderer($chromePath);
         });
 
-        $this->app->singleton(Reader::class, function (): ?Reader {
+        $this->app->bind(Reader::class, function (): ?Reader {
             $path = config('cas.geolite_db_path', '');
 
             if (! is_string($path) || $path === '') {
