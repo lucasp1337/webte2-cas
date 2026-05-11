@@ -5,20 +5,75 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Resources\AnimationStatsResource;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
-/**
- * Stub — real handler ships in Phase 09.
- */
 final class StatsSummaryController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(): AnimationStatsResource
     {
-        return response()->json([
-            'from' => null,
-            'to' => null,
-            'animations' => [],
+        $since = CarbonImmutable::now()->subDays(30)->toDateTimeString();
+
+        $totals = DB::table('animation_usages')
+            ->select('animation', DB::raw('count(*) as c'))
+            ->where('started_at', '>=', $since)
+            ->groupBy('animation')
+            ->get()
+            ->mapWithKeys(function (\stdClass $row): array {
+                $animation = $row->animation;
+                $c = $row->c;
+
+                return [
+                    is_string($animation) ? $animation : '' => is_numeric($c) ? (int) $c : 0,
+                ];
+            })
+            ->all();
+
+        $perDay = DB::table('animation_usages')
+            ->select(DB::raw('date(started_at) as d'), 'animation', DB::raw('count(*) as c'))
+            ->where('started_at', '>=', $since)
+            ->groupBy('d', 'animation')
+            ->orderBy('d')
+            ->get()
+            ->map(function (\stdClass $row): array {
+                $d = $row->d;
+                $animation = $row->animation;
+                $c = $row->c;
+
+                return [
+                    'date' => is_string($d) ? $d : '',
+                    'animation' => is_string($animation) ? $animation : '',
+                    'count' => is_numeric($c) ? (int) $c : 0,
+                ];
+            })
+            ->all();
+
+        $topCountries = DB::table('animation_usages')
+            ->select('country_iso', 'country', DB::raw('count(*) as c'))
+            ->whereNotNull('country_iso')
+            ->where('started_at', '>=', $since)
+            ->groupBy('country_iso', 'country')
+            ->orderByDesc('c')
+            ->limit(10)
+            ->get()
+            ->map(function (\stdClass $row): array {
+                $countryIso = $row->country_iso;
+                $country = $row->country;
+                $c = $row->c;
+
+                return [
+                    'country_iso' => is_string($countryIso) ? $countryIso : '',
+                    'country' => is_string($country) ? $country : null,
+                    'count' => is_numeric($c) ? (int) $c : 0,
+                ];
+            })
+            ->all();
+
+        return AnimationStatsResource::make([
+            'totals' => $totals,
+            'per_day' => $perDay,
+            'top_countries' => $topCountries,
         ]);
     }
 }
