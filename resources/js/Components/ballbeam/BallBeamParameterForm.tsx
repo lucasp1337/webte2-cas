@@ -5,9 +5,8 @@ import { useForm } from 'react-hook-form';
 import { ballBeamParametersSchema, type BallBeamParameters } from '@/api/ballBeam';
 import Button from '@/Components/ui/Button';
 import FieldError from '@/Components/ui/FieldError';
-import Input from '@/Components/ui/Input';
-import Label from '@/Components/ui/Label';
 import { useT } from '@/hooks/useT';
+import { cn } from '@/lib/cn';
 
 /**
  * Default values from gulicka.m that produce a converging simulation.
@@ -43,24 +42,61 @@ type BallBeamParameterFormProps = {
 
 type FieldConfig = {
     name: keyof BallBeamParameters;
+    symbol: string;
+    unit: string;
     min?: number;
     max?: number;
     step?: number;
 };
 
-const FIELDS: FieldConfig[] = [
-    { name: 'ball_mass', min: 0.001, max: 100, step: 0.01 },
-    { name: 'ball_radius', min: 0.001, max: 1, step: 0.001 },
-    { name: 'inertia', min: 0.000001, max: 1, step: 0.000001 },
-    { name: 'beam_length', min: 0.001, max: 10, step: 0.1 },
-    { name: 'gravity', min: 0.001, max: 30, step: 0.01 },
-    { name: 'reference_position', step: 0.05 },
-    { name: 'initial_position', step: 0.05 },
-    { name: 'initial_velocity', step: 0.1 },
-    { name: 'initial_angle', step: 0.01 },
-    { name: 'duration_seconds', min: 0.001, max: 30, step: 0.5 },
-    { name: 'step_size', min: 0.001, max: 0.5, step: 0.001 },
+type SectionConfig = {
+    key: string;
+    labelKey: 'phys' | 'ref' | 'init' | 'disc';
+    fields: FieldConfig[];
+};
+
+const SECTIONS: SectionConfig[] = [
+    {
+        key: 'phys',
+        labelKey: 'phys',
+        fields: [
+            { name: 'ball_mass', symbol: 'm', unit: 'kg', min: 0.001, max: 100, step: 0.01 },
+            { name: 'ball_radius', symbol: 'R', unit: 'm', min: 0.001, max: 1, step: 0.001 },
+            { name: 'inertia', symbol: 'J', unit: 'kg·m²', min: 0.000001, max: 1, step: 0.000001 },
+            { name: 'beam_length', symbol: 'L', unit: 'm', min: 0.001, max: 10, step: 0.1 },
+            { name: 'gravity', symbol: 'g', unit: 'm/s²', min: 0.001, max: 30, step: 0.01 },
+        ],
+    },
+    {
+        key: 'ref',
+        labelKey: 'ref',
+        fields: [{ name: 'reference_position', symbol: 'r', unit: 'm', step: 0.05 }],
+    },
+    {
+        key: 'init',
+        labelKey: 'init',
+        fields: [
+            { name: 'initial_position', symbol: 'x₀', unit: 'm', step: 0.05 },
+            { name: 'initial_velocity', symbol: 'ẋ₀', unit: 'm/s', step: 0.1 },
+            { name: 'initial_angle', symbol: 'α₀', unit: 'rad', step: 0.01 },
+        ],
+    },
+    {
+        key: 'disc',
+        labelKey: 'disc',
+        fields: [
+            { name: 'duration_seconds', symbol: 't_end', unit: 's', min: 0.001, max: 30, step: 0.5 },
+            { name: 'step_size', symbol: 'dt', unit: 's', min: 0.001, max: 0.5, step: 0.001 },
+        ],
+    },
 ];
+
+const SECTION_LABELS = {
+    phys: 'Physical',
+    ref: 'Reference',
+    init: 'Initial conditions',
+    disc: 'Discretisation',
+};
 
 export default function BallBeamParameterForm({
     onRun,
@@ -94,38 +130,91 @@ export default function BallBeamParameterForm({
         <form
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             onSubmit={handleSubmit(handleRunSubmit)}
-            className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
+            className="flex flex-col gap-0 rounded-md border border-border bg-surface-raised"
             aria-label={t.ballBeam.form.title}
             noValidate
         >
-            <h2 className="text-base font-semibold text-on-surface">{t.ballBeam.form.title}</h2>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {FIELDS.map(({ name, min, max, step }) => {
-                    const error = errors[name];
-                    return (
-                        <div key={name} className="flex flex-col gap-1">
-                            <Label htmlFor={`ballbeam-${name}`} required>
-                                {t.ballBeam.form.fields[name]}
-                            </Label>
-                            <Input
-                                id={`ballbeam-${name}`}
-                                type="number"
-                                step={step}
-                                min={min}
-                                max={max}
-                                error={error !== undefined}
-                                {...register(name, { valueAsNumber: true })}
-                            />
-                            <FieldError>{error?.message}</FieldError>
-                        </div>
-                    );
-                })}
+            {/* Card header */}
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+                <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-on-surface-muted">
+                    {t.ballBeam.parametersTitle}
+                </span>
+                <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                        reset(DEFAULT_VALUES);
+                    }}
+                    className="font-mono text-[11px] text-on-surface-faint transition-colors hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    {t.ballBeam.parametersReset}
+                </button>
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-2">
-                <Button type="submit" disabled={disabled}>
-                    {disabled ? t.ballBeam.form.running : t.ballBeam.form.run}
+            {/* Sections */}
+            <div className="flex flex-col gap-0 px-5 py-4">
+                {SECTIONS.map((section, si) => (
+                    <div key={section.key} className={cn('flex flex-col gap-2', si < SECTIONS.length - 1 && 'mb-5')}>
+                        {/* Section eyebrow */}
+                        <div className="mb-2 border-b border-border pb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-on-surface-muted">
+                            {SECTION_LABELS[section.labelKey]}
+                        </div>
+                        {section.fields.map(({ name, symbol, unit, min, max, step }) => {
+                            const error = errors[name];
+                            return (
+                                <div key={name} className="mb-[10px]">
+                                    <label
+                                        htmlFor={`ballbeam-${name}`}
+                                        className="mb-[5px] flex items-center justify-between text-[12px] font-medium text-on-surface"
+                                    >
+                                        <span>{symbol}</span>
+                                        <span className="font-mono text-[11px] font-normal text-on-surface-faint">
+                                            {t.ballBeam.form.fields[name]}
+                                        </span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            id={`ballbeam-${name}`}
+                                            type="number"
+                                            step={step}
+                                            min={min}
+                                            max={max}
+                                            aria-invalid={error !== undefined}
+                                            {...register(name, { valueAsNumber: true })}
+                                            className={cn(
+                                                'w-full rounded border bg-surface-sunken px-[10px] py-[7px] pr-10',
+                                                'font-mono text-[13px] text-on-surface',
+                                                'transition-[border-color,box-shadow]',
+                                                'focus:outline-none focus:ring-[3px] focus:ring-accent/20',
+                                                error !== undefined
+                                                    ? 'border-error focus:border-error'
+                                                    : 'border-border focus:border-accent',
+                                                'disabled:cursor-not-allowed disabled:opacity-60',
+                                            )}
+                                            disabled={disabled}
+                                        />
+                                        <span className="pointer-events-none absolute right-[10px] top-1/2 -translate-y-1/2 font-mono text-[11px] text-on-surface-faint">
+                                            {unit}
+                                        </span>
+                                    </div>
+                                    {error !== undefined && <FieldError>{error.message}</FieldError>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
+
+            {/* CTA row */}
+            <div className="flex flex-col gap-2 border-t border-border px-5 py-4">
+                <Button
+                    type="submit"
+                    size="lg"
+                    disabled={disabled}
+                    loading={disabled}
+                    className="w-full justify-center"
+                >
+                    {disabled ? t.ballBeam.runningLabel : t.ballBeam.runButton}
                 </Button>
 
                 {onRestartWithNewR !== undefined && (
@@ -135,21 +224,11 @@ export default function BallBeamParameterForm({
                         disabled={disabled}
                         onClick={handleRestartClick}
                         title={t.pendulum.player.restartWithNewRHint}
+                        className="w-full justify-center"
                     >
                         {t.ballBeam.form.restartWithNewR}
                     </Button>
                 )}
-
-                <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={disabled}
-                    onClick={() => {
-                        reset(DEFAULT_VALUES);
-                    }}
-                >
-                    {t.ballBeam.form.reset}
-                </Button>
             </div>
         </form>
     );

@@ -154,7 +154,7 @@ export default function BallBeamChart({ trajectory, cursorIndex }: BallBeamChart
     }
 
     return (
-        <div className="w-full rounded-md border border-border bg-surface p-3">
+        <div className="w-full">
             <Line data={chartData} options={options} />
         </div>
     );
