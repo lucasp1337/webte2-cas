@@ -62,12 +62,34 @@ it('declares the X-API-Key security scheme', function (): void {
     expect($schemes['ApiKeyAuth']['name'])->toBe('X-API-Key');
 });
 
-// TODO(phase-10): Scramble emits "string" as the /octave/exec response schema
-// because it cannot introspect through the controller's
-// OctaveExecutionResource::make(...)->response()->setStatusCode(...) chain.
-// Fix queued for next session — likely needs an `@response` Scramble
-// annotation on the controller method or a typed response macro. The
-// /octave/session DELETE 204 has the same root cause.
-it('documents the /octave/exec 200 response as a structured object with all six fields')->todo();
+it('documents the /octave/exec 200 response as a structured object with all six fields', function (): void {
+    $spec = getJson('/api/openapi.json');
 
-it('documents the DELETE /octave/session as 204 No Content')->todo();
+    // Scramble emits a $ref to components/schemas for resource responses.
+    // Verify the ref exists on the 200 response then resolve the component.
+    $ref = $spec->json('paths./octave/exec.post.responses.200.content.application/json.schema.$ref');
+    expect($ref)->toBe('#/components/schemas/OctaveExecutionResource');
+
+    /** @var array<string, mixed> $schema */
+    $schema = $spec->json('components.schemas.OctaveExecutionResource');
+
+    expect($schema)->toHaveKey('type', 'object');
+
+    /** @var array<string, mixed> $properties */
+    $properties = $schema['properties'] ?? [];
+
+    expect(array_keys($properties))->toContain('request_id')
+        ->toContain('stdout')
+        ->toContain('stderr')
+        ->toContain('exit_code')
+        ->toContain('duration_ms')
+        ->toContain('rejection_reason');
+});
+
+it('documents the DELETE /octave/session as 204 No Content', function (): void {
+    /** @var array<string, mixed> $responses */
+    $responses = getJson('/api/openapi.json')
+        ->json('paths./octave/session.delete.responses') ?? [];
+
+    expect($responses)->toHaveKey('204');
+});

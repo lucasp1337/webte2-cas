@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ExecuteOctaveCommandRequest;
 use App\Http\Resources\OctaveExecutionResource;
 use App\Services\Octave\Exceptions\OctaveBridgeUnavailableException;
+use Dedoc\Scramble\Attributes\Response as ScrambleResponse;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
@@ -16,6 +17,9 @@ final class ExecuteOctaveCommandController extends Controller
 {
     public function __construct(private readonly ExecuteOctaveCommand $action) {}
 
+    #[ScrambleResponse(status: 200, type: OctaveExecutionResource::class)]
+    #[ScrambleResponse(status: 422, type: OctaveExecutionResource::class)]
+    #[ScrambleResponse(status: 504, type: OctaveExecutionResource::class)]
     public function __invoke(ExecuteOctaveCommandRequest $request): JsonResponse
     {
         /** @var string $command */

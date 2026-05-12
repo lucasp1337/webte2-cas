@@ -10,14 +10,13 @@ use App\Http\Requests\Api\V1\ExecuteOctaveCommandRequest;
 use App\Services\Octave\Exceptions\OctaveBridgeUnavailableException;
 use App\Services\Octave\Exceptions\OctaveCommandRejectedException;
 use App\Services\Octave\OctaveBridgeClient;
+use Dedoc\Scramble\Attributes\Response as ScrambleResponse;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 final class ClearOctaveSessionController extends Controller
 {
-    /**
-     * @response 204
-     */
+    #[ScrambleResponse(status: 204, description: 'No Content')]
     public function __invoke(ClearOctaveSessionRequest $request, OctaveBridgeClient $bridge): HttpResponse
     {
         /** @var string|null $sessionId */
