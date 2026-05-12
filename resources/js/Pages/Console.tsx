@@ -4,6 +4,8 @@ import { createOctaveClient, type OctaveClient, type WorkspaceVariable } from '@
 import OctaveEditor from '@/Components/console/OctaveEditor';
 import OutputPanel, { type ConsoleEntry } from '@/Components/console/OutputPanel';
 import VariableSidebar from '@/Components/console/VariableSidebar';
+import { PlayIcon } from '@/Components/icons';
+import Badge from '@/Components/ui/Badge';
 import Button from '@/Components/ui/Button';
 import { useRunHotkey } from '@/hooks/useRunHotkey';
 import { useT } from '@/hooks/useT';
@@ -14,6 +16,8 @@ export type ConsoleProps = {
     /** Test-only injection point for the API client. */
     client?: OctaveClient;
 };
+
+const EXAMPLE_SNIPPET = 'a = 1+1; a+2';
 
 function makeEntryId(): string {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -29,6 +33,7 @@ export default function Console({ apiKey, client }: ConsoleProps) {
     const [variables, setVariables] = useState<WorkspaceVariable[]>([]);
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [isClearing, setIsClearing] = useState<boolean>(false);
+    const [bridgeError, setBridgeError] = useState<boolean>(false);
 
     const octaveClient = useMemo<OctaveClient>(() => client ?? createOctaveClient({ apiKey }), [client, apiKey]);
 
@@ -37,6 +42,7 @@ export default function Console({ apiKey, client }: ConsoleProps) {
         if (trimmed === '' || isRunning) return;
 
         setIsRunning(true);
+        setBridgeError(false);
         try {
             const outcome = await octaveClient.runCommand(trimmed);
             const entry: ConsoleEntry = {
@@ -51,6 +57,11 @@ export default function Console({ apiKey, client }: ConsoleProps) {
                 setVariables(names);
                 setCode('');
             }
+            if (outcome.status === 'bridge_unavailable') {
+                setBridgeError(true);
+            }
+        } catch {
+            setBridgeError(true);
         } finally {
             setIsRunning(false);
         }
@@ -65,11 +76,16 @@ export default function Console({ apiKey, client }: ConsoleProps) {
                 setEntries([]);
                 setVariables([]);
                 setCode('');
+                setBridgeError(false);
             }
         } finally {
             setIsClearing(false);
         }
     }, [isClearing, octaveClient]);
+
+    const insertExample = useCallback((): void => {
+        setCode(EXAMPLE_SNIPPET);
+    }, []);
 
     useRunHotkey(() => {
         void submit();
@@ -82,8 +98,26 @@ export default function Console({ apiKey, client }: ConsoleProps) {
                 <p className="text-on-surface-muted">{t.console.subtitle}</p>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_240px]">
-                <div className="flex flex-col gap-4">
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+                {/* ── Left column ────────────────────────────────────────── */}
+                <div className="min-w-0 flex flex-col gap-4">
+                    {/* Editor eyebrow strip */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-on-surface-muted">
+                                {t.console.editorLabel}
+                            </span>
+                            <Badge variant="accent" square>
+                                <span className="font-mono">octave</span>
+                            </Badge>
+                        </div>
+                        <span className="font-mono text-[11px] text-on-surface-faint">
+                            {t.console.sessionLabel}
+                            <span className="ml-1 text-on-surface-muted">·</span>
+                            <span className="ml-1 text-on-surface-muted">—</span>
+                        </span>
+                    </div>
+
                     <OctaveEditor
                         value={code}
                         onChange={setCode}
@@ -92,33 +126,69 @@ export default function Console({ apiKey, client }: ConsoleProps) {
                         ariaLabel={t.console.editorLabel}
                     />
 
-                    <div className="flex flex-wrap items-center gap-3">
-                        <Button
-                            onClick={() => void submit()}
-                            loading={isRunning}
-                            disabled={code.trim() === ''}
-                            data-testid="run-button"
-                        >
-                            {isRunning ? t.console.running : t.console.run}
-                        </Button>
+                    {/* Run / Clear row */}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={() => void submit()}
+                                loading={isRunning}
+                                disabled={code.trim() === ''}
+                                leadingIcon={!isRunning ? <PlayIcon size={11} /> : undefined}
+                                data-testid="run-button"
+                            >
+                                {isRunning ? t.console.running : t.console.run}
+                            </Button>
 
-                        <Button
-                            variant="secondary"
-                            onClick={() => void clearSession()}
-                            loading={isClearing}
-                            data-testid="clear-button"
-                        >
-                            {isClearing ? t.console.clearing : t.console.clear}
-                        </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => void clearSession()}
+                                loading={isClearing}
+                                data-testid="clear-button"
+                            >
+                                {isClearing ? t.console.clearing : t.console.clear}
+                            </Button>
+                        </div>
 
-                        <span className="ml-auto text-xs text-on-surface-muted">{t.console.runShortcutHint}</span>
+                        <span className="text-[12px] text-on-surface-muted">
+                            <KbdHint keys={['⌃', '↵']} /> {t.console.runShortcutHint}
+                        </span>
                     </div>
 
-                    <OutputPanel entries={entries} />
+                    <OutputPanel
+                        entries={entries}
+                        isRunning={isRunning}
+                        bridgeError={bridgeError}
+                        onRetry={() => void submit()}
+                        onInsertExample={insertExample}
+                    />
                 </div>
 
-                <VariableSidebar variables={variables} />
+                {/* ── Right column — workspace sidebar ────────────────── */}
+                <VariableSidebar
+                    variables={variables}
+                    isLoading={isRunning && variables.length === 0}
+                    bridgeError={bridgeError}
+                />
             </div>
         </AppLayout>
+    );
+}
+
+type KbdHintProps = {
+    keys: string[];
+};
+
+function KbdHint({ keys }: KbdHintProps) {
+    return (
+        <>
+            {keys.map((k, i) => (
+                <span
+                    key={i}
+                    className="rounded-[3px] border border-b-2 border-border bg-surface-sunken px-[5px] py-px font-mono text-[11px] text-on-surface-muted"
+                >
+                    {k}
+                </span>
+            ))}
+        </>
     );
 }

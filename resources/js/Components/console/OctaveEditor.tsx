@@ -45,7 +45,7 @@ export default function OctaveEditor({
         <div
             onKeyDown={onKeyDown}
             data-testid="octave-editor"
-            className="overflow-hidden rounded-md border border-border bg-surface-raised"
+            className="overflow-hidden rounded-md border border-border bg-surface-raised transition-[border-color,box-shadow] focus-within:border-accent focus-within:[box-shadow:0_0_0_3px_color-mix(in_oklab,var(--accent)_18%,transparent)]"
         >
             <CodeMirror
                 value={value}
