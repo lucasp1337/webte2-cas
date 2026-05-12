@@ -251,4 +251,10 @@ export const en: Translation = {
         required: 'This field is required',
         invalid: 'Invalid value',
     },
+    notFound: {
+        title: 'Page not found',
+        subtitle: "This page doesn't exist — try one of the routes below.",
+        suggested: 'Available pages',
+        backHome: 'Back to home',
+    },
 };

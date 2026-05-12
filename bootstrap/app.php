@@ -12,7 +12,10 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -60,5 +63,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Render Inertia's NotFound page for all 404s that arrive via a
+        // web (HTML) request. API 404s keep the default JSON response.
+        $exceptions->render(function (NotFoundHttpException $_e, Request $request) {
+            if ($request->expectsJson()) {
+                return null; // Let Laravel produce the default JSON 404
+            }
+
+            return Inertia::render('NotFound')
+                ->toResponse($request)
+                ->setStatusCode(404);
+        });
     })->create();

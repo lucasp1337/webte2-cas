@@ -250,6 +250,12 @@ const skSource = {
         required: 'Toto pole je povinné',
         invalid: 'Neplatná hodnota',
     },
+    notFound: {
+        title: 'Stránka nenájdená',
+        subtitle: 'Táto stránka neexistuje — vyskúšajte jednu z nasledujúcich.',
+        suggested: 'Dostupné stránky',
+        backHome: 'Späť domov',
+    },
 };
 
 export type Translation = typeof skSource;
