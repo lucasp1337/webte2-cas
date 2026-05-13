@@ -31,7 +31,9 @@ Route::prefix('v1/simulations')->middleware('api-simulation')->group(function ()
 });
 
 Route::prefix('v1')->middleware('api-protected')->group(function (): void {
-    Route::post('/octave/exec', ExecuteOctaveCommandController::class)->name('v1.octave.exec');
+    Route::post('/octave/exec', ExecuteOctaveCommandController::class)
+        ->middleware('throttle:octave-exec')
+        ->name('v1.octave.exec');
     Route::delete('/octave/session', ClearOctaveSessionController::class)->name('v1.octave.session.clear');
 
     Route::get('/logs', ListRequestLogsController::class)->name('v1.logs.index');

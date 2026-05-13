@@ -21,6 +21,7 @@ use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use GeoIp2\Database\Reader;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -57,7 +58,18 @@ final class AppServiceProvider extends ServiceProvider
                 return null;
             }
 
-            return is_file($path) ? new Reader($path) : null;
+            if (! is_file($path)) {
+                if (app()->environment('production')) {
+                    Log::warning(
+                        'GeoLite2-City.mmdb missing at {path}; geolocation will return unknown for all lookups',
+                        ['path' => $path],
+                    );
+                }
+
+                return null;
+            }
+
+            return new Reader($path);
         });
     }
 
@@ -87,6 +99,17 @@ final class AppServiceProvider extends ServiceProvider
             $key = $apiKey !== null ? $apiKey->id : $request->ip();
 
             return Limit::perMinute($perMinute)->by($key);
+        });
+
+        RateLimiter::for('octave-exec', function (Request $request): Limit {
+            /** @var ApiKey|null $apiKey */
+            $apiKey = $request->attributes->get('api_key');
+            /** @var int $perMinute */
+            $perMinute = config('cas.cas_rate_limit_per_minute', 30);
+
+            return $apiKey !== null
+                ? Limit::perMinute($perMinute)->by("api-key:{$apiKey->id}")
+                : Limit::perMinute(10)->by($request->ip());
         });
     }
 }

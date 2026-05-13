@@ -15,6 +15,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Session\Middleware\StartSession;
 use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -43,6 +44,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'api-key' => ApiKeyMiddleware::class,
             'set-locale' => SetLocale::class,
         ]);
+
+        // The per-API-key rate-limiter buckets read $request->attributes->get('api_key')
+        // which is set by ApiKeyMiddleware.  Laravel's default priority list places
+        // ThrottleRequests before any custom auth middleware, so we bump ApiKeyMiddleware
+        // ahead of ThrottleRequests to guarantee it populates the attribute first.
+        $middleware->prependToPriorityList(
+            ThrottleRequests::class,
+            ApiKeyMiddleware::class,
+        );
 
         // Order matters: LogRequestMiddleware first so failed-auth requests
         // (rejected by ApiKeyMiddleware with 401) still produce a RequestLog
