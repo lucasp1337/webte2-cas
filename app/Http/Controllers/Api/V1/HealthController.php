@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\HealthCheckResource;
+use Dedoc\Scramble\Attributes\Response as ScrambleResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +15,8 @@ use Throwable;
 
 final class HealthController extends Controller
 {
+    #[ScrambleResponse(status: 200, type: HealthCheckResource::class)]
+    #[ScrambleResponse(status: 503, type: HealthCheckResource::class)]
     public function __invoke(): JsonResponse
     {
         $mysql = $this->checkMysql();
@@ -21,17 +25,16 @@ final class HealthController extends Controller
 
         $allOk = $mysql === 'ok' && $redis === 'ok' && $bridge === 'ok';
 
-        return response()->json(
-            [
-                'status' => $allOk ? 'ok' : 'degraded',
-                'dependencies' => [
-                    'mysql' => $mysql,
-                    'redis' => $redis,
-                    'octave_bridge' => $bridge,
-                ],
+        return HealthCheckResource::make([
+            'status' => $allOk ? 'ok' : 'degraded',
+            'dependencies' => [
+                'mysql' => $mysql,
+                'redis' => $redis,
+                'octave_bridge' => $bridge,
             ],
-            $allOk ? 200 : 503,
-        );
+        ])
+            ->response()
+            ->setStatusCode($allOk ? 200 : 503);
     }
 
     private function checkMysql(): string
