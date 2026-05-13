@@ -191,6 +191,13 @@
             margin-left: 8px;
         }
 
+        .schema-ref {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10px;
+            color: #555;
+            margin: 4px 0 2px;
+        }
+
         h2.schemas-heading {
             margin-top: 28px;
             page-break-before: always;
@@ -260,6 +267,70 @@
                 }
             }
             return $schema;
+        };
+
+        /**
+         * Build a realistic example value from a JSON Schema fragment so the
+         * PDF shows what a payload looks like instead of dumping the raw
+         * schema metadata. Walks objects + arrays recursively.
+         *
+         * @param  mixed  $schema
+         * @return mixed
+         */
+        $exampleFromSchema = function ($schema, int $depth = 0) use (&$exampleFromSchema, $resolveRefs) {
+            $schema = $resolveRefs($schema, $depth);
+            if (! is_array($schema) || $depth > 6) {
+                return null;
+            }
+            if (array_key_exists('example', $schema)) {
+                return $schema['example'];
+            }
+            if (array_key_exists('const', $schema)) {
+                return $schema['const'];
+            }
+            if (isset($schema['enum']) && is_array($schema['enum']) && $schema['enum'] !== []) {
+                return $schema['enum'][0];
+            }
+            $type = $schema['type'] ?? null;
+            if (is_array($type)) {
+                $type = (string) ($type[0] ?? 'string');
+            }
+            if (! is_string($type) && isset($schema['properties'])) {
+                $type = 'object';
+            }
+            switch ((string) $type) {
+                case 'object':
+                    $out = [];
+                    $properties = is_array($schema['properties'] ?? null) ? $schema['properties'] : [];
+                    foreach ($properties as $propName => $propSchema) {
+                        $out[(string) $propName] = $exampleFromSchema($propSchema, $depth + 1);
+                    }
+                    return $out;
+                case 'array':
+                    $items = $schema['items'] ?? [];
+                    return [$exampleFromSchema($items, $depth + 1)];
+                case 'integer':
+                    return 0;
+                case 'number':
+                    return 0.0;
+                case 'boolean':
+                    return false;
+                case 'null':
+                    return null;
+                case 'string':
+                default:
+                    $format = is_string($schema['format'] ?? null) ? $schema['format'] : null;
+                    if ($format === 'binary') {
+                        return '<binary>';
+                    }
+                    if ($format === 'date-time') {
+                        return '2026-01-01T00:00:00Z';
+                    }
+                    if ($format === 'date') {
+                        return '2026-01-01';
+                    }
+                    return 'string';
+            }
         };
     @endphp
 
@@ -355,7 +426,15 @@
                                 : null;
                         @endphp
                         @if (!empty($jsonSchema))
-                            <pre class="body-schema">{{ json_encode($resolveRefs($jsonSchema), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                            @php
+                                $refName = is_array($jsonSchema) && isset($jsonSchema['$ref']) && is_string($jsonSchema['$ref'])
+                                    ? basename($jsonSchema['$ref'])
+                                    : null;
+                            @endphp
+                            @if ($refName !== null)
+                                <div class="schema-ref">{{ $refName }}</div>
+                            @endif
+                            <pre class="body-schema">{{ json_encode($exampleFromSchema($jsonSchema), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         @endif
                     @endif
 
@@ -387,7 +466,15 @@
                                     @endif
                                 </div>
                                 @if ($respJsonSchema !== null)
-                                    <pre class="body-schema">{{ json_encode($resolveRefs($respJsonSchema), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    @php
+                                        $respRefName = is_array($respJsonSchema) && isset($respJsonSchema['$ref']) && is_string($respJsonSchema['$ref'])
+                                            ? basename($respJsonSchema['$ref'])
+                                            : null;
+                                    @endphp
+                                    @if ($respRefName !== null)
+                                        <div class="schema-ref">{{ $respRefName }}</div>
+                                    @endif
+                                    <pre class="body-schema">{{ json_encode($exampleFromSchema($respJsonSchema), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                                 @endif
                             @endif
                         @endforeach
