@@ -9,13 +9,13 @@ export default function Footer() {
                 WEBTE2 &middot; {t.footer.academic} &middot; 2026
             </span>
             <a
-                href="https://github.com/webte2"
+                href="https://github.com/lucasp1337/webte2-cas"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono text-[12px] text-on-surface-muted transition-colors hover:text-on-surface"
                 style={{ borderBottom: '1px solid var(--border)' }}
             >
-                github.com/webte2 &#8599;
+                github.com/lucasp1337/webte2-cas &#8599;
             </a>
         </footer>
     );
