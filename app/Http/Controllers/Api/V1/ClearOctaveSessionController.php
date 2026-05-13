@@ -16,8 +16,18 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 final class ClearOctaveSessionController extends Controller
 {
-    #[ScrambleResponse(status: 204, description: 'No Content')]
-    public function __invoke(ClearOctaveSessionRequest $request, OctaveBridgeClient $bridge): HttpResponse
+    /**
+     * Clear the caller's Octave workspace. Returns 204 with no body.
+     *
+     * The success path returns 204 with an empty body. The bridge-unavailable
+     * path returns 503 with a JSON error envelope. Scramble's response
+     * inference adds a spurious 200 entry on top of explicit annotations when
+     * the controller's return type union spans body and no-body responses, so
+     * both real status codes are annotated explicitly below.
+     */
+    #[ScrambleResponse(status: 204, description: 'Session cleared')]
+    #[ScrambleResponse(status: 503, description: 'Octave bridge unreachable', type: 'array{error: string, message: string}')]
+    public function __invoke(ClearOctaveSessionRequest $request, OctaveBridgeClient $bridge): JsonResponse|HttpResponse
     {
         /** @var string|null $sessionId */
         $sessionId = $request->session()->pull(ExecuteOctaveCommandRequest::SESSION_KEY);
@@ -35,6 +45,6 @@ final class ClearOctaveSessionController extends Controller
             }
         }
 
-        return new HttpResponse('', HttpResponse::HTTP_NO_CONTENT);
+        return response()->noContent();
     }
 }
