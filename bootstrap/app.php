@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\ApiKeyMiddleware;
+use App\Http\Middleware\ContentSecurityPolicyMiddleware;
 use App\Http\Middleware\EnsureAnonTokenMiddleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogRequestMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -26,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Security headers run on every response — web and API alike.
+        // They are appended to the global stack so they execute last,
+        // after all other middleware, and cannot be overridden downstream.
+        $middleware->append(SecurityHeadersMiddleware::class);
+        $middleware->append(ContentSecurityPolicyMiddleware::class);
+
         $middleware->web(append: [
             SetLocale::class,
             HandleInertiaRequests::class,
