@@ -264,11 +264,16 @@ const skSource = {
         renderFailed: 'Vykreslenie PDF zlyhalo.',
         timeout: 'Vykreslenie sa časovo prekročilo — skúste znova.',
         unknownError: 'Nastala neočakávaná chyba.',
+        specLink: 'Spec JSON ↗',
+        tryItHint: 'Swagger UI umožňuje priamo testovať endpointy',
+        apiKeyNotice: 'Väčšina endpointov vyžaduje X-API-Key',
+        versionBadge: 'openapi 3.1 · v1',
     },
     stats: {
         title: 'Štatistika použitia',
         subtitle: 'Anonymné metriky o použití animácií.',
         last30Days: 'Posledných 30 dní',
+        lastThirtyDays: 'Posledných 30 dní',
         totalsTitle: 'Celkový počet spustení',
         perDayTitle: 'Spustenia za deň',
         topCountriesTitle: 'Najčastejšie krajiny',
@@ -290,6 +295,16 @@ const skSource = {
             ballBeam: 'Gulička na tyči',
         },
         empty: 'Za toto obdobie nie sú dostupné žiadne dáta.',
+        kpi: {
+            totalRuns: 'Celkové spustenia',
+            topCountry: 'Najčastejšia krajina',
+            peakDay: 'Rekordný deň',
+            notEnoughData: 'Nedostatok dát',
+        },
+        emptyState: {
+            title: 'Žiadne dáta za toto obdobie',
+            description: 'Spustite simuláciu na zaznamenanie prvého dátového bodu.',
+        },
     },
     footer: {
         copyright: 'WEBTE2 — záverečné zadanie',

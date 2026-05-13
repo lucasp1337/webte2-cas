@@ -266,11 +266,16 @@ export const en: Translation = {
         renderFailed: 'PDF render failed.',
         timeout: 'Render timed out — try again.',
         unknownError: 'An unexpected error occurred.',
+        specLink: 'Spec JSON ↗',
+        tryItHint: 'Swagger UI lets you try endpoints directly',
+        apiKeyNotice: 'Most endpoints require X-API-Key',
+        versionBadge: 'openapi 3.1 · v1',
     },
     stats: {
         title: 'Usage statistics',
         subtitle: 'Anonymous metrics on animation usage.',
         last30Days: 'Last 30 days',
+        lastThirtyDays: 'Last 30 days',
         totalsTitle: 'Total runs',
         perDayTitle: 'Runs per day',
         topCountriesTitle: 'Top countries',
@@ -291,6 +296,16 @@ export const en: Translation = {
             ballBeam: 'Ball on beam',
         },
         empty: 'No data available for this period.',
+        kpi: {
+            totalRuns: 'Total runs',
+            topCountry: 'Top country',
+            peakDay: 'Peak day',
+            notEnoughData: 'Not enough data',
+        },
+        emptyState: {
+            title: 'No data for this period',
+            description: 'Run a simulation to record the first data point.',
+        },
     },
     footer: {
         copyright: 'WEBTE2 — final assignment',
