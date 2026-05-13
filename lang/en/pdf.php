@@ -17,4 +17,5 @@ return [
     'responses' => 'Responses',
     'security' => 'Security',
     'description' => 'Description',
+    'schemas' => 'Schemas',
 ];

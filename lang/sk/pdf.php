@@ -17,4 +17,5 @@ return [
     'responses' => 'Odpovede',
     'security' => 'Zabezpečenie',
     'description' => 'Popis',
+    'schemas' => 'Schémy',
 ];
