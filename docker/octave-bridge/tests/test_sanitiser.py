@@ -42,6 +42,16 @@ _FORBIDDEN_CASES: list[tuple[str, str]] = [
     ("exit; disp(a);", "exit/quit (use Clear Session)"),
     ("quit", "exit/quit (use Clear Session)"),
     ("quit()", "exit/quit (use Clear Session)"),
+    # pkg — package loader
+    ("pkg list", "pkg/package loader"),
+    ("pkg install io", "pkg/package loader"),
+    ("pkg('list')", "pkg/package loader"),
+    # dlmwrite / csvwrite — direct file-write functions
+    ("dlmwrite('/tmp/x.csv', x)", "dlmwrite"),
+    ("csvwrite('/tmp/x.csv', x)", "csvwrite"),
+    # urlread / urlwrite — explicit HTTP calls
+    ("urlread('http://example.com')", "urlread"),
+    ("urlwrite('http://example.com', '/tmp/x')", "urlwrite"),
 ]
 
 
@@ -75,6 +85,13 @@ _LEGITIMATE_CASES: list[str] = [
     "exit_code = 1;",
     "existing = 5;",
     "quit_flag = false;",
+    # 'pkg' appears as a substring inside an identifier — must not be flagged
+    "pkg_version = '1.0';",
+    "package = 5;",
+    # 'url' inside a plain string assignment — no urlread/urlwrite call present
+    "my_url = 'http://example.com';",
+    # 'dlm' appears inside a variable name — must not be flagged
+    "data_to_dlm = 5;",
 ]
 
 
