@@ -74,15 +74,25 @@ services:
   mysql:
     image: mysql:9.0
     environment:
-      MYSQL_DATABASE: webte2
-      MYSQL_USER: webte2
-      MYSQL_PASSWORD: changeme
-      MYSQL_ROOT_PASSWORD: changeme
+      MYSQL_DATABASE: ${DB_DATABASE:-webte2}
+      MYSQL_USER: ${DB_USERNAME:-webte2}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in .env}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pchangeme"]
+      # mysqladmin ping returns 0 even on auth failure ("Access denied" still
+      # proves the server is up), so we pass the root password explicitly to
+      # also catch credential drift.
+      test:
+        - "CMD"
+        - "mysqladmin"
+        - "ping"
+        - "-h"
+        - "localhost"
+        - "-uroot"
+        - "-p${MYSQL_ROOT_PASSWORD}"
       interval: 10s
       timeout: 5s
       retries: 10
@@ -90,11 +100,24 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    # REDIS_PASSWORD is optional in dev (blank => no auth) and required in prod.
+    # The shell wrapper avoids emitting --requirepass when the var is empty,
+    # so local dev with REDIS_PASSWORD= keeps working without auth.
+    command:
+      - "sh"
+      - "-c"
+      - 'exec redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # When auth is on, plain `redis-cli ping` returns NOAUTH with exit code 1.
+      # The shell wrapper passes -a only if a password is configured, so the
+      # probe works in both dev (no password) and prod (password set).
+      test:
+        - "CMD-SHELL"
+        - 'redis-cli ${REDIS_PASSWORD:+-a "$$REDIS_PASSWORD"} --no-auth-warning ping | grep -q PONG'
       interval: 10s
       timeout: 3s
       retries: 5
