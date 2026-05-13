@@ -23,8 +23,11 @@ final class ExecuteOctaveCommandRequest extends FormRequest
      */
     public function rules(): array
     {
+        /** @var int $maxLength */
+        $maxLength = config('cas.cas_command_max_length', 4096);
+
         return [
-            'command' => ['required', 'string', 'max:4096'],
+            'command' => ['required', 'string', "max:{$maxLength}"],
         ];
     }
 
