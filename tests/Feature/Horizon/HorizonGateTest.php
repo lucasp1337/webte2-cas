@@ -23,7 +23,9 @@ beforeEach(function (): void {
 
         $request = request();
         $session = $request->hasSession() ? $request->session() : null;
-        $sessionToken = $session !== null ? (string) $session->get('horizon_admin_token', '') : '';
+        /** @var mixed $rawSessionToken */
+        $rawSessionToken = $session !== null ? $session->get('horizon_admin_token', '') : '';
+        $sessionToken = is_string($rawSessionToken) ? $rawSessionToken : '';
 
         $supplied = (string) ($request->query('token')
             ?? $request->header('X-Horizon-Token')

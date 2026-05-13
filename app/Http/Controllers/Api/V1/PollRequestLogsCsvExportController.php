@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Dedoc\Scramble\Attributes\Response as ScrambleResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -12,6 +13,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PollRequestLogsCsvExportController extends Controller
 {
+    #[ScrambleResponse(status: 200, description: 'CSV stream when the export is ready', mediaType: 'text/csv', type: 'string', format: 'binary')]
+    #[ScrambleResponse(status: 202, description: 'Export still queued or running; poll again', type: 'array{job_id: string, status: string, poll_url: string}')]
+    #[ScrambleResponse(status: 404, description: 'Export id unknown or expired', type: 'array{error: string, message: string}')]
     public function __invoke(Request $request, string $exportId): JsonResponse|StreamedResponse
     {
         /** @var array{status: string, filters: array<string, mixed>}|null $state */

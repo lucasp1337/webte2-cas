@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\ExportRequestLogsRequest;
 use App\Jobs\GenerateLargeCsvExportJob;
 use App\Models\ApiKey;
 use App\Models\RequestLog;
+use Dedoc\Scramble\Attributes\Response as ScrambleResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -18,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ExportRequestLogsCsvController extends Controller
 {
+    #[ScrambleResponse(status: 200, description: 'CSV stream (sync, ≤10k rows)', mediaType: 'text/csv', type: 'string', format: 'binary')]
+    #[ScrambleResponse(status: 202, description: 'Export queued (>10k rows); poll the returned URL', type: 'array{job_id: string, status: string, poll_url: string}')]
     public function __invoke(ExportRequestLogsRequest $request): StreamedResponse|JsonResponse
     {
         /** @var string|null $from */
