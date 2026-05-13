@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Dedoc\Scramble\Attributes\Response as ScrambleResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class DownloadApiDocsPdfController extends Controller
 {
+    #[ScrambleResponse(status: 200, description: 'PDF stream', mediaType: 'application/pdf', type: 'string', format: 'binary')]
+    #[ScrambleResponse(status: 202, description: 'Render in progress; poll the same URL', type: 'array{export_id: string, status: string, poll_url: string}')]
+    #[ScrambleResponse(status: 404, description: 'Export id unknown or expired', type: 'array{error: string, message: string}')]
+    #[ScrambleResponse(status: 500, description: 'Render failed', type: 'array{error: string, message: string}')]
     public function __invoke(string $exportId): JsonResponse|StreamedResponse
     {
         /** @var array{status: string, locale: string, path?: string, error?: string}|null $state */

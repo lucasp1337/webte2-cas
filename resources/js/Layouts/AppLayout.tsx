@@ -22,7 +22,11 @@ export default function AppLayout({ title, children }: AppLayoutProps) {
                 {t.common.skipToContent}
             </a>
             <Header />
-            <main id={MAIN_ID} tabIndex={-1} className="container mx-auto flex-1 px-4 py-8 focus:outline-none">
+            <main
+                id={MAIN_ID}
+                tabIndex={-1}
+                className="mx-auto w-full max-w-[1280px] flex-1 px-7 pb-14 pt-9 focus:outline-none"
+            >
                 {children}
             </main>
             <Footer />

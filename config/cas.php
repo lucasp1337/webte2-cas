@@ -19,4 +19,5 @@ return [
     'cas_slowdown_ms' => (int) env('CAS_SLOWDOWN_MS', 500),
     'openapi_pdf_timeout_seconds' => (int) env('OPENAPI_PDF_TIMEOUT_SECONDS', 60),
     'browsershot_chrome_path' => env('BROWSERSHOT_CHROME_PATH', '/usr/bin/chromium'),
+    'horizon_admin_token' => env('HORIZON_ADMIN_TOKEN', ''),
 ];

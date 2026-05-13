@@ -64,4 +64,16 @@ final class AnimationUsageFactory extends Factory
             'city' => null,
         ]);
     }
+
+    /**
+     * State with a specific country and optional city.
+     */
+    public function forCountry(string $iso, string $name, ?string $city = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'country_iso' => $iso,
+            'country' => $name,
+            'city' => $city,
+        ]);
+    }
 }

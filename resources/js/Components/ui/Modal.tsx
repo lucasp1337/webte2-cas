@@ -5,8 +5,9 @@ import { cn } from '@/lib/cn';
 export type ModalProps = {
     open: boolean;
     onClose: () => void;
-    title: string;
+    title?: string;
     children: ReactNode;
+    footer?: ReactNode;
     closeLabel?: string;
     className?: string;
 };
@@ -14,7 +15,7 @@ export type ModalProps = {
 const FOCUSABLE_SELECTOR =
     'a[href], area[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export default function Modal({ open, onClose, title, children, closeLabel = 'Close', className }: ModalProps) {
+export default function Modal({ open, onClose, title, children, footer, closeLabel = 'Close', className }: ModalProps) {
     const dialogRef = useRef<HTMLDivElement | null>(null);
     const previouslyFocused = useRef<HTMLElement | null>(null);
 
@@ -103,11 +104,13 @@ export default function Modal({ open, onClose, title, children, closeLabel = 'Cl
         return null;
     }
 
+    // Stable ID — only one modal can be open at a time so no collision risk.
     const titleId = 'modal-title';
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-20 flex items-center justify-center backdrop-blur-sm"
+            style={{ background: 'var(--surface-overlay)' }}
             onClick={handleBackdropClick}
             onKeyDown={handleKeyDown}
             data-testid="modal-backdrop"
@@ -116,37 +119,57 @@ export default function Modal({ open, onClose, title, children, closeLabel = 'Cl
                 ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby={titleId}
+                aria-labelledby={title !== undefined ? titleId : undefined}
                 tabIndex={-1}
                 className={cn(
-                    'w-full max-w-lg rounded-lg border border-border bg-surface-raised text-on-surface shadow-xl',
+                    'w-full max-w-[380px] rounded-lg border border-border bg-surface-raised text-on-surface',
+                    'p-[22px]',
+                    // Design spec: 0 8px 32px rgba(0,0,0,0.18)
+                    'shadow-[0_8px_32px_rgba(0,0,0,0.18)]',
                     'focus-visible:outline-none',
                     className,
                 )}
             >
-                <div className="flex items-start justify-between border-b border-border px-6 py-4">
-                    <h2 id={titleId} className="text-lg font-semibold">
-                        {title}
-                    </h2>
+                {/* Header row — title + close button */}
+                <div className="mb-4 flex items-start justify-between gap-3">
+                    {title !== undefined ? (
+                        <h2 id={titleId} className="text-[15px] font-semibold leading-tight tracking-[-0.01em]">
+                            {title}
+                        </h2>
+                    ) : (
+                        // Keeps the close button right-aligned when there's no title
+                        <span aria-hidden="true" />
+                    )}
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label={closeLabel}
-                        className="rounded-md p-1 text-on-surface-muted hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className={cn(
+                            'flex h-6 w-6 shrink-0 items-center justify-center rounded',
+                            'text-on-surface-muted',
+                            'hover:bg-surface-sunken hover:text-on-surface',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                        )}
                     >
                         <svg
                             aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            className="h-5 w-5"
+                            viewBox="0 0 16 16"
+                            className="h-4 w-4"
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="2"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
                         >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+                            <path d="M4 4l8 8M12 4L4 12" />
                         </svg>
                     </button>
                 </div>
-                <div className="px-6 py-4">{children}</div>
+
+                {/* Body */}
+                <div>{children}</div>
+
+                {/* Optional footer slot */}
+                {footer !== undefined && <div className="mt-4">{footer}</div>}
             </div>
         </div>
     );

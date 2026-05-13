@@ -25,14 +25,50 @@ final class HorizonServiceProvider extends HorizonApplicationServiceProvider
     /**
      * Register the Horizon gate.
      *
-     * This gate determines who can access Horizon in non-local environments.
+     * In local environments Horizon is open without a token — mirrors the
+     * behaviour of Horizon's own Authorize middleware which bypasses the gate
+     * locally.  In every other environment the request must supply the
+     * HORIZON_ADMIN_TOKEN value via the `token` query-string parameter or the
+     * `X-Horizon-Token` header.  A successful match is persisted into the
+     * session so subsequent SPA navigations within Horizon (which lose the
+     * query string) keep working without a fresh handshake on every URL.
+     * Comparison is constant-time to prevent timing oracle attacks.
      */
     protected function gate(): void
     {
         Gate::define('viewHorizon', function ($user = null) {
-            return in_array(optional($user)->email, [
-                //
-            ]);
+            if (app()->environment('local')) {
+                return true;
+            }
+
+            $expected = (string) config('cas.horizon_admin_token');
+
+            if ($expected === '') {
+                return false;
+            }
+
+            $request = request();
+
+            $session = $request->hasSession() ? $request->session() : null;
+            /** @var mixed $rawSessionToken */
+            $rawSessionToken = $session !== null ? $session->get('horizon_admin_token', '') : '';
+            $sessionToken = is_string($rawSessionToken) ? $rawSessionToken : '';
+
+            $supplied = (string) ($request->query('token')
+                ?? $request->header('X-Horizon-Token')
+                ?? $sessionToken);
+
+            if ($supplied === '') {
+                return false;
+            }
+
+            $ok = hash_equals($expected, $supplied);
+
+            if ($ok && $session !== null && $sessionToken !== $supplied) {
+                $session->put('horizon_admin_token', $supplied);
+            }
+
+            return $ok;
         });
     }
 }

@@ -34,7 +34,11 @@ export default function LanguageSwitcher({ className }: LanguageSwitcherProps) {
         <div
             role="group"
             aria-label={t.common.switchLanguage}
-            className={cn('inline-flex overflow-hidden rounded-md border border-border', className)}
+            className={cn(
+                'inline-flex h-[30px] overflow-hidden rounded border border-border bg-surface-raised',
+                'font-mono text-[11px] tracking-[0.04em]',
+                className,
+            )}
         >
             {SUPPORTED_LOCALES.map((locale) => {
                 const isActive = locale === active;
@@ -45,12 +49,14 @@ export default function LanguageSwitcher({ className }: LanguageSwitcherProps) {
                         onClick={() => switchTo(locale)}
                         aria-pressed={isActive}
                         className={cn(
-                            'px-3 py-1.5 text-sm font-medium uppercase transition-colors',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-                            isActive ? 'bg-primary text-on-primary' : 'bg-surface text-on-surface hover:bg-secondary',
+                            'px-[10px] font-mono text-[11px] uppercase transition-colors',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent',
+                            isActive
+                                ? 'bg-surface-sunken text-on-surface-strong'
+                                : 'bg-transparent text-on-surface-muted hover:text-on-surface',
                         )}
                     >
-                        {locale}
+                        {locale.toUpperCase()}
                     </button>
                 );
             })}

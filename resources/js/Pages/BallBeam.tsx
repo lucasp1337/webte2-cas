@@ -8,6 +8,10 @@ import {
 } from '@/api/ballBeam';
 import BallBeam2D from '@/animations/BallBeam2D';
 import type { BallBeamFrame } from '@/animations/types';
+import Badge from '@/Components/ui/Badge';
+import EmptyState from '@/Components/ui/EmptyState';
+import ErrorState from '@/Components/ui/ErrorState';
+import LoadingState from '@/Components/ui/LoadingState';
 import BallBeamChart from '@/Components/ballbeam/BallBeamChart';
 import BallBeamParameterForm from '@/Components/ballbeam/BallBeamParameterForm';
 import PlayerControls, { type PlayerState } from '@/Components/pendulum/PlayerControls';
@@ -36,7 +40,6 @@ export type BallBeamPageProps = {
 
 /** Fallback used until ResizeObserver has measured the actual container. */
 const CANVAS_WIDTH_FALLBACK = 700;
-const CANVAS_HEIGHT = 300;
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -69,6 +72,8 @@ export default function BallBeam({ apiKey, slowdownFactor }: BallBeamPageProps):
     const { ref: canvasContainerRef, width: canvasWidth } = useElementWidth<HTMLDivElement>(CANVAS_WIDTH_FALLBACK);
 
     const frameCount = frames.length;
+    // Canvas height derived from 16:9 aspect ratio of the measured container width
+    const canvasHeight = Math.round(canvasWidth * (9 / 16));
 
     const { cursorIndex, setCursorIndex } = useAnimationLoop({
         frameCount,
@@ -79,6 +84,10 @@ export default function BallBeam({ apiKey, slowdownFactor }: BallBeamPageProps):
             setPlayerState('finished');
         },
     });
+
+    // Current time in seconds for the scrub bar label
+    const currentFrame = frames[cursorIndex];
+    const currentTimeSeconds = currentFrame?.t ?? 0;
 
     // -----------------------------------------------------------------------
     // Simulation
@@ -157,27 +166,51 @@ export default function BallBeam({ apiKey, slowdownFactor }: BallBeamPageProps):
         void startRun(lastParameters, trajectory.final_state);
     }
 
+    function handleScrub(index: number): void {
+        setCursorIndex(index);
+        if (playerState === 'playing') {
+            setPlayerState('paused');
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Status badge variant
+    // -----------------------------------------------------------------------
+
+    type BadgeVariant = 'neutral' | 'accent' | 'success' | 'error';
+
+    function statusBadgeVariant(): BadgeVariant {
+        if (loading) return 'accent';
+        if (error !== null) return 'error';
+        if (trajectory !== null) return 'success';
+        return 'neutral';
+    }
+
+    function statusBadgeLabel(): string {
+        if (loading) return t.ballBeam.runningLabel;
+        if (error !== null) return t.ballBeam.errorStatus;
+        if (trajectory !== null) return t.ballBeam.okStatus;
+        return t.ballBeam.idleStatus;
+    }
+
     // -----------------------------------------------------------------------
     // Render
     // -----------------------------------------------------------------------
 
     return (
         <AppLayout title={t.ballBeam.title}>
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-on-surface">{t.ballBeam.title}</h1>
-                <p className="text-on-surface-muted">{t.ballBeam.subtitle}</p>
+            {/* Page header */}
+            <div className="mb-7 flex flex-col gap-2">
+                <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.025em] text-on-surface">
+                    {t.ballBeam.title}
+                </h1>
+                <p className="max-w-[60ch] text-[15px] tracking-[-0.005em] text-on-surface-muted">
+                    {t.ballBeam.subtitle}
+                </p>
             </div>
 
-            {error !== null && (
-                <div
-                    role="alert"
-                    className="mt-4 rounded-md border border-error bg-error/10 px-4 py-3 text-sm text-error"
-                >
-                    {error}
-                </div>
-            )}
-
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
+            {/* Two-column body */}
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[360px_1fr]">
                 {/* Left — parameter form */}
                 <BallBeamParameterForm
                     onRun={handleRun}
@@ -185,32 +218,86 @@ export default function BallBeam({ apiKey, slowdownFactor }: BallBeamPageProps):
                     disabled={loading}
                 />
 
-                {/* Right — animation, controls, chart */}
-                <div className="flex flex-col gap-0">
-                    {/* Konva renderer — responsive to container width */}
-                    <div ref={canvasContainerRef} className="overflow-hidden rounded-t-md border border-border">
-                        <BallBeam2D
-                            frames={frames}
-                            cursorIndex={cursorIndex}
-                            width={canvasWidth}
-                            height={CANVAS_HEIGHT}
-                            lengthMeters={lastParameters?.beam_length ?? 1.0}
-                        />
+                {/* Right — animation + controls + chart */}
+                <div className="flex min-w-0 flex-col gap-4">
+                    {/* Animation card */}
+                    <div className="rounded-md border border-border bg-surface-raised">
+                        {/* Card header */}
+                        <div className="flex items-center justify-between border-b border-border px-4 py-2">
+                            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-on-surface-muted">
+                                {t.ballBeam.simulationTitle}
+                            </span>
+                            <Badge variant={statusBadgeVariant()} dot square>
+                                {statusBadgeLabel()}
+                            </Badge>
+                        </div>
+
+                        {/* Canvas area — 16:9 */}
+                        <div ref={canvasContainerRef} className="w-full">
+                            {loading ? (
+                                <LoadingState
+                                    variant="spinner"
+                                    label={t.ballBeam.runningLabel}
+                                    className="aspect-video rounded-none border-0"
+                                />
+                            ) : error !== null ? (
+                                <ErrorState
+                                    title={t.ballBeam.errorTitle}
+                                    message={error}
+                                    onRetry={() => {
+                                        setError(null);
+                                    }}
+                                    retryLabel={t.common.back}
+                                    className="aspect-video rounded-none border-0"
+                                />
+                            ) : frames.length === 0 ? (
+                                <EmptyState
+                                    title={t.ballBeam.emptyTitle}
+                                    description={t.ballBeam.emptySub}
+                                    className="aspect-video rounded-none border-0"
+                                />
+                            ) : (
+                                <BallBeam2D
+                                    frames={frames}
+                                    cursorIndex={cursorIndex}
+                                    width={canvasWidth}
+                                    height={canvasHeight}
+                                    lengthMeters={lastParameters?.beam_length ?? 1.0}
+                                />
+                            )}
+                        </div>
                     </div>
 
-                    {/* Player controls */}
+                    {/* Replay controls — attached to bottom of animation card */}
                     <PlayerControls
                         state={playerState}
                         hasTrajectory={trajectory !== null}
+                        frameIndex={cursorIndex}
+                        frameCount={frameCount}
+                        currentTimeSeconds={currentTimeSeconds}
                         onPlay={handlePlay}
                         onPause={handlePause}
                         onReset={handleReset}
                         onRestartWithNewR={handlePlayerRestartWithNewR}
+                        onScrub={handleScrub}
                     />
 
-                    {/* Chart */}
-                    <div className="mt-4">
-                        <BallBeamChart trajectory={trajectory} cursorIndex={cursorIndex} />
+                    {/* Chart card */}
+                    <div className="rounded-md border border-border bg-surface-raised">
+                        {/* Card header */}
+                        <div className="border-b border-border px-4 py-2">
+                            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-on-surface-muted">
+                                {t.ballBeam.chartTitle}
+                            </span>
+                        </div>
+                        {/* Chart body */}
+                        <div className="p-3">
+                            {loading ? (
+                                <LoadingState variant="skeleton" rows={3} className="border-0 bg-transparent p-0" />
+                            ) : (
+                                <BallBeamChart trajectory={trajectory} cursorIndex={cursorIndex} />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -24,6 +24,12 @@ function makeAnimApiKey(string $suffix): array
 
 beforeEach(function (): void {
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-05-11 12:00:00'));
+    // Pest --parallel reuses a worker process across test files; some upstream
+    // simulation tests fire SimulationStarted with the sync queue driver and
+    // leak rows into this connection's animation_usages table even though
+    // RefreshDatabase is in play. Belt-and-braces clean to keep the stats
+    // assertions deterministic.
+    AnimationUsage::query()->delete();
 });
 
 afterEach(function (): void {

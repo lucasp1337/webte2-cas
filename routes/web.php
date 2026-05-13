@@ -12,6 +12,7 @@ use App\Http\Controllers\Pages\StatsPage;
 use App\Http\Controllers\SetLocaleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::post('/locale', SetLocaleController::class)->name('locale.set');
 
@@ -34,3 +35,11 @@ Route::get('/', function (Request $request) {
 
     return redirect('/'.$locale);
 })->name('welcome');
+
+// Catch-all: any unmatched web URL renders the Inertia NotFound page with a
+// proper 404 status. The exception-handler in bootstrap/app.php covers
+// route-level 404s; this fallback handles URLs that don't match any route
+// pattern at all (e.g. /sk/does-not-exist).
+Route::fallback(function () {
+    return Inertia::render('NotFound')->toResponse(request())->setStatusCode(404);
+});

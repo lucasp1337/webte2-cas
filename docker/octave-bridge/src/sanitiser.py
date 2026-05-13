@@ -43,6 +43,22 @@ FORBIDDEN_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("addpath", re.compile(r"\baddpath\b", re.IGNORECASE)),
     ("rmpath", re.compile(r"\brmpath\b", re.IGNORECASE)),
     ("shell escape (!)", re.compile(r"!")),
+    # exit/quit kill the subprocess but leave the .mat workspace untouched, so
+    # variables "reappear" on the next request.  Users who want to wipe their
+    # workspace should use the Clear Session button (DELETE /sessions/{id}).
+    ("exit/quit (use Clear Session)", re.compile(r"\b(?:exit|quit)\b", re.IGNORECASE)),
+    # pkg load/install can pull in forge packages that expose network or
+    # filesystem operations.  Control/signal packages are auto-loaded via the
+    # system octaverc; user-side `pkg` calls are unnecessary and must be blocked.
+    ("pkg/package loader", re.compile(r"\bpkg\b", re.IGNORECASE)),
+    # dlmwrite / csvwrite write directly to a filename argument, bypassing the
+    # fopen/fwrite controls that are already blocked above.
+    ("dlmwrite", re.compile(r"\bdlmwrite\b", re.IGNORECASE)),
+    ("csvwrite", re.compile(r"\bcsvwrite\b", re.IGNORECASE)),
+    # urlread / urlwrite make explicit HTTP/HTTPS requests.  Network egress is
+    # blocked at the container level, but reject upfront for a clear user error.
+    ("urlread", re.compile(r"\burlread\b", re.IGNORECASE)),
+    ("urlwrite", re.compile(r"\burlwrite\b", re.IGNORECASE)),
 )
 
 # Block-comment pattern: %{ ... %} (non-greedy, dotall so it spans lines).

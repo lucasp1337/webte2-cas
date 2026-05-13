@@ -35,3 +35,4 @@ Thumbs.db
 /storage/app/private/*
 /bootstrap/cache/*.php
 !.gitkeep
+design-handoff/

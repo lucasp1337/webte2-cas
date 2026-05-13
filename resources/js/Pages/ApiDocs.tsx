@@ -3,6 +3,9 @@ import { type ReactElement, useState } from 'react';
 import SwaggerUI from 'swagger-ui-react';
 
 import { ApiDocsRequestError, createApiDocsClient } from '@/api/apiDocs';
+import Badge from '@/Components/ui/Badge';
+import Button from '@/Components/ui/Button';
+import { DownloadIcon, ExternalIcon } from '@/Components/icons';
 import { useLocale, useT } from '@/hooks/useT';
 import AppLayout from '@/Layouts/AppLayout';
 
@@ -61,30 +64,58 @@ export default function ApiDocs(): ReactElement {
 
     const isBusy = downloadState.kind === 'requesting' || downloadState.kind === 'polling';
 
+    function downloadLabel(): string {
+        if (downloadState.kind === 'requesting') return t.apiDocs.queueing;
+        if (downloadState.kind === 'polling') return t.apiDocs.generating;
+        return t.apiDocs.downloadPdf;
+    }
+
     return (
         <AppLayout title={t.apiDocs.title}>
-            <div className="flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-on-surface">{t.apiDocs.title}</h1>
-                        <p className="mt-1 text-on-surface-muted">{t.apiDocs.subtitle}</p>
+            <div className="flex flex-col gap-6">
+                {/* Page title strip */}
+                <div className="flex items-start justify-between gap-6">
+                    <div className="min-w-0">
+                        <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.025em] text-on-surface">
+                            {t.apiDocs.title}
+                        </h1>
+                        <p className="mt-1 text-[15px] text-on-surface-muted">{t.apiDocs.subtitle}</p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            void handleDownload();
-                        }}
-                        disabled={isBusy}
-                        className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary disabled:opacity-50"
-                    >
-                        {downloadState.kind === 'requesting' && t.apiDocs.queueing}
-                        {downloadState.kind === 'polling' && t.apiDocs.generating}
-                        {downloadState.kind !== 'requesting' &&
-                            downloadState.kind !== 'polling' &&
-                            t.apiDocs.downloadPdf}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <Badge variant="accent" square>
+                            {t.apiDocs.versionBadge}
+                        </Badge>
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            loading={isBusy}
+                            leadingIcon={!isBusy ? <DownloadIcon /> : undefined}
+                            onClick={() => {
+                                void handleDownload();
+                            }}
+                            disabled={isBusy}
+                        >
+                            {downloadLabel()}
+                        </Button>
+                    </div>
                 </div>
 
+                {/* Info strip */}
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                    <a
+                        href="/api/openapi.json"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-mono text-[12px] text-on-surface-muted transition-colors hover:text-on-surface"
+                    >
+                        <ExternalIcon />
+                        {t.apiDocs.specLink}
+                    </a>
+                    <span className="font-mono text-[12px] text-on-surface-muted">{t.apiDocs.tryItHint}</span>
+                    <span className="font-mono text-[12px] text-on-surface-muted">{t.apiDocs.apiKeyNotice}</span>
+                </div>
+
+                {/* Error alert */}
                 {downloadState.kind === 'failed' && (
                     <div
                         role="alert"
@@ -94,7 +125,8 @@ export default function ApiDocs(): ReactElement {
                     </div>
                 )}
 
-                <div className="rounded-md border border-border bg-surface-raised">
+                {/* Swagger UI — wrapped in a card so its white background respects the surrounding design */}
+                <div className="overflow-hidden rounded-md border border-border bg-surface-raised">
                     <SwaggerUI url="/api/openapi.json" />
                 </div>
             </div>

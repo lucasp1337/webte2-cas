@@ -183,6 +183,40 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
+
+        .response-media-type {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10px;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .schema-ref {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10px;
+            color: #555;
+            margin: 4px 0 2px;
+        }
+
+        h2.schemas-heading {
+            margin-top: 28px;
+            page-break-before: always;
+        }
+
+        .schema-block {
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+        }
+        .schema-name {
+            font-weight: 600;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+        }
+        .schema-type {
+            color: #777;
+            font-size: 11px;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -202,6 +236,102 @@
     @php
         /** @var array<string, array<string, mixed>> $paths */
         $paths = $spec['paths'] ?? [];
+
+        /** @var array<string, mixed> $componentSchemas */
+        $componentSchemas = is_array($spec['components'] ?? null) && is_array($spec['components']['schemas'] ?? null)
+            ? $spec['components']['schemas']
+            : [];
+
+        /**
+         * Inline an OpenAPI $ref by resolving it against components.schemas.
+         * Recurses into nested properties / items so the rendered JSON is
+         * actually readable in the PDF instead of just showing a $ref string.
+         *
+         * @param  mixed  $schema
+         * @return mixed
+         */
+        $resolveRefs = function ($schema, int $depth = 0) use (&$resolveRefs, $componentSchemas) {
+            if ($depth > 6 || ! is_array($schema)) {
+                return $schema;
+            }
+            if (isset($schema['$ref']) && is_string($schema['$ref'])) {
+                $parts = explode('/', $schema['$ref']);
+                $name = end($parts);
+                if (is_string($name) && isset($componentSchemas[$name])) {
+                    return $resolveRefs($componentSchemas[$name], $depth + 1);
+                }
+            }
+            foreach ($schema as $key => $value) {
+                if (is_array($value)) {
+                    $schema[$key] = $resolveRefs($value, $depth + 1);
+                }
+            }
+            return $schema;
+        };
+
+        /**
+         * Build a realistic example value from a JSON Schema fragment so the
+         * PDF shows what a payload looks like instead of dumping the raw
+         * schema metadata. Walks objects + arrays recursively.
+         *
+         * @param  mixed  $schema
+         * @return mixed
+         */
+        $exampleFromSchema = function ($schema, int $depth = 0) use (&$exampleFromSchema, $resolveRefs) {
+            $schema = $resolveRefs($schema, $depth);
+            if (! is_array($schema) || $depth > 6) {
+                return null;
+            }
+            if (array_key_exists('example', $schema)) {
+                return $schema['example'];
+            }
+            if (array_key_exists('const', $schema)) {
+                return $schema['const'];
+            }
+            if (isset($schema['enum']) && is_array($schema['enum']) && $schema['enum'] !== []) {
+                return $schema['enum'][0];
+            }
+            $type = $schema['type'] ?? null;
+            if (is_array($type)) {
+                $type = (string) ($type[0] ?? 'string');
+            }
+            if (! is_string($type) && isset($schema['properties'])) {
+                $type = 'object';
+            }
+            switch ((string) $type) {
+                case 'object':
+                    $out = [];
+                    $properties = is_array($schema['properties'] ?? null) ? $schema['properties'] : [];
+                    foreach ($properties as $propName => $propSchema) {
+                        $out[(string) $propName] = $exampleFromSchema($propSchema, $depth + 1);
+                    }
+                    return $out;
+                case 'array':
+                    $items = $schema['items'] ?? [];
+                    return [$exampleFromSchema($items, $depth + 1)];
+                case 'integer':
+                    return 0;
+                case 'number':
+                    return 0.0;
+                case 'boolean':
+                    return false;
+                case 'null':
+                    return null;
+                case 'string':
+                default:
+                    $format = is_string($schema['format'] ?? null) ? $schema['format'] : null;
+                    if ($format === 'binary') {
+                        return '<binary>';
+                    }
+                    if ($format === 'date-time') {
+                        return '2026-01-01T00:00:00Z';
+                    }
+                    if ($format === 'date') {
+                        return '2026-01-01';
+                    }
+                    return 'string';
+            }
+        };
     @endphp
 
     @if (!empty($paths))
@@ -296,7 +426,15 @@
                                 : null;
                         @endphp
                         @if (!empty($jsonSchema))
-                            <pre class="body-schema">{{ json_encode($jsonSchema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                            @php
+                                $refName = is_array($jsonSchema) && isset($jsonSchema['$ref']) && is_string($jsonSchema['$ref'])
+                                    ? basename($jsonSchema['$ref'])
+                                    : null;
+                            @endphp
+                            @if ($refName !== null)
+                                <div class="schema-ref">{{ $refName }}</div>
+                            @endif
+                            <pre class="body-schema">{{ json_encode($exampleFromSchema($jsonSchema), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         @endif
                     @endif
 
@@ -309,11 +447,35 @@
                                     /** @var array<string, mixed> $response */
                                     $codeClass = str_starts_with((string)$statusCode, '2') ? 'code-2xx'
                                         : (str_starts_with((string)$statusCode, '4') ? 'code-4xx' : 'code-5xx');
+                                    $respContent = is_array($response['content'] ?? null) ? $response['content'] : [];
+                                    $respJsonSchema = null;
+                                    $respMediaType = null;
+                                    foreach ($respContent as $mt => $body) {
+                                        if (is_array($body) && isset($body['schema'])) {
+                                            $respMediaType = (string) $mt;
+                                            $respJsonSchema = $body['schema'];
+                                            break;
+                                        }
+                                    }
                                 @endphp
                                 <div class="response-row">
                                     <span class="response-code {{ $codeClass }}">{{ $statusCode }}</span>
                                     <span>{{ $response['description'] ?? '' }}</span>
+                                    @if ($respMediaType !== null)
+                                        <span class="response-media-type">{{ $respMediaType }}</span>
+                                    @endif
                                 </div>
+                                @if ($respJsonSchema !== null)
+                                    @php
+                                        $respRefName = is_array($respJsonSchema) && isset($respJsonSchema['$ref']) && is_string($respJsonSchema['$ref'])
+                                            ? basename($respJsonSchema['$ref'])
+                                            : null;
+                                    @endphp
+                                    @if ($respRefName !== null)
+                                        <div class="schema-ref">{{ $respRefName }}</div>
+                                    @endif
+                                    <pre class="body-schema">{{ json_encode($exampleFromSchema($respJsonSchema), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                @endif
                             @endif
                         @endforeach
                     @endif
@@ -333,6 +495,70 @@
             @endif
         @endforeach
     @endforeach
+
+    {{-- Component schemas --}}
+    @if (! empty($componentSchemas))
+        <h2 class="schemas-heading">{{ __('pdf.schemas') }}</h2>
+        @foreach ($componentSchemas as $schemaName => $schemaDef)
+            @if (is_array($schemaDef))
+                @php
+                    /** @var array<string, mixed> $schemaDef */
+                    $schemaType = is_string($schemaDef['type'] ?? null) ? $schemaDef['type'] : 'object';
+                    $properties = is_array($schemaDef['properties'] ?? null) ? $schemaDef['properties'] : [];
+                    $required = is_array($schemaDef['required'] ?? null) ? $schemaDef['required'] : [];
+                @endphp
+                <div class="schema-block">
+                    <div class="route-header">
+                        <span class="schema-name">{{ $schemaName }}</span>
+                        <span class="schema-type">{{ $schemaType }}</span>
+                    </div>
+                    @if (! empty($properties))
+                        <table class="params">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('pdf.param_name') }}</th>
+                                    <th>{{ __('pdf.param_type') }}</th>
+                                    <th>{{ __('pdf.param_required') }}</th>
+                                    <th>{{ __('pdf.description') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($properties as $propName => $propDef)
+                                    @if (is_array($propDef))
+                                        @php
+                                            /** @var array<string, mixed> $propDef */
+                                            $resolved = $resolveRefs($propDef);
+                                            $resolvedArr = is_array($resolved) ? $resolved : [];
+                                            $propTypeRaw = $resolvedArr['type'] ?? '-';
+                                            if (is_array($propTypeRaw)) {
+                                                $propType = implode('|', array_filter(array_map('strval', $propTypeRaw), fn (string $v) => $v !== 'null'));
+                                            } elseif (is_string($propTypeRaw)) {
+                                                $propType = $propTypeRaw;
+                                            } else {
+                                                $propType = '-';
+                                            }
+                                            if ($propType === 'array' && is_array($resolvedArr['items'] ?? null)) {
+                                                $itemsType = $resolvedArr['items']['type'] ?? '?';
+                                                $propType = 'array<' . (is_string($itemsType) ? $itemsType : '?') . '>';
+                                            }
+                                            $propDesc = is_string($resolvedArr['description'] ?? null) ? $resolvedArr['description'] : '';
+                                            $isRequired = in_array($propName, $required, true);
+                                        @endphp
+                                        <tr>
+                                            <td><code>{{ $propName }}</code></td>
+                                            <td>{{ $propType }}</td>
+                                            <td>{{ $isRequired ? '✓' : '' }}</td>
+                                            <td>{{ $propDesc }}</td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            @endif
+        @endforeach
+    @endif
 
 </body>
 </html>

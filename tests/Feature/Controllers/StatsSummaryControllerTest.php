@@ -24,6 +24,8 @@ function makeStatsApiKey(string $suffix): array
 
 beforeEach(function (): void {
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-05-11 12:00:00'));
+    // See StatsForAnimationControllerTest for the rationale on this cleanup.
+    AnimationUsage::query()->delete();
 });
 
 afterEach(function (): void {

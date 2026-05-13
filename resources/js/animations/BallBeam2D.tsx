@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { Circle, Layer, Line, Stage, Text } from 'react-konva';
 
 import type { AnimationRendererProps, BallBeamFrame } from '@/animations/types';
+import { useCssColors } from '@/hooks/useCssColors';
 import { useFitScale } from '@/hooks/useFitScale';
 import { useT } from '@/hooks/useT';
 
@@ -35,11 +36,18 @@ const HORIZ_MARGIN = 20;
 /** Vertical padding in pixels above/below the ball tip. */
 const VERTICAL_PADDING = 20;
 
-const COLOR_BEAM = 'var(--color-on-surface)';
-const COLOR_BALL = 'var(--color-primary)';
-const COLOR_PIVOT = 'var(--color-secondary)';
-const COLOR_BADGE = 'var(--color-on-surface-muted)';
-const COLOR_CAPTION = 'var(--color-on-surface-muted)';
+/**
+ * CSS custom property names — resolved at render time via `useCssColors`
+ * because Konva passes these strings straight to the canvas API, which does
+ * not understand `var(--foo)` and silently falls back to opaque black.
+ */
+const COLOR_TOKENS = {
+    beam: '--on-surface',
+    ball: '--accent',
+    pivot: '--on-surface-muted',
+    badge: '--on-surface-muted',
+    caption: '--on-surface-muted',
+} as const;
 
 type BallBeam2DProps = AnimationRendererProps<BallBeamFrame> & {
     /**
@@ -59,6 +67,7 @@ type EmptyStageProps = {
 };
 
 function EmptyStage({ width, height, pivotX, pivotY, beamHalfPx }: EmptyStageProps): ReactElement {
+    const colors = useCssColors(COLOR_TOKENS);
     return (
         <div className="bg-surface-muted">
             <Stage width={width} height={height}>
@@ -66,7 +75,7 @@ function EmptyStage({ width, height, pivotX, pivotY, beamHalfPx }: EmptyStagePro
                     {/* Un-tilted beam through pivot */}
                     <Line
                         points={[pivotX - beamHalfPx, pivotY, pivotX + beamHalfPx, pivotY]}
-                        stroke={COLOR_BEAM}
+                        stroke={colors.beam}
                         strokeWidth={BEAM_THICKNESS_PX}
                         lineCap="round"
                     />
@@ -81,7 +90,7 @@ function EmptyStage({ width, height, pivotX, pivotY, beamHalfPx }: EmptyStagePro
                             pivotY + PIVOT_RADIUS_PX * 2,
                         ]}
                         closed
-                        fill={COLOR_PIVOT}
+                        fill={colors.pivot}
                     />
                 </Layer>
             </Stage>
@@ -109,6 +118,7 @@ export default function BallBeam2D({
     lengthMeters = DEFAULT_LENGTH_M,
 }: BallBeam2DProps): ReactElement {
     const t = useT();
+    const colors = useCssColors(COLOR_TOKENS);
 
     // Fit-bbox scale: half the beam extends in each direction from the pivot,
     // so verticalReachMeters = beam_length / 2 is the tightest bound that
@@ -166,7 +176,7 @@ export default function BallBeam2D({
                     {/* Beam */}
                     <Line
                         points={[x1, y1, x2, y2]}
-                        stroke={COLOR_BEAM}
+                        stroke={colors.beam}
                         strokeWidth={BEAM_THICKNESS_PX}
                         lineCap="round"
                     />
@@ -182,11 +192,11 @@ export default function BallBeam2D({
                             pivotY + PIVOT_RADIUS_PX * 2,
                         ]}
                         closed
-                        fill={COLOR_PIVOT}
+                        fill={colors.pivot}
                     />
 
                     {/* Ball */}
-                    <Circle x={ballX} y={ballY} radius={BALL_RADIUS_PX} fill={COLOR_BALL} />
+                    <Circle x={ballX} y={ballY} radius={BALL_RADIUS_PX} fill={colors.ball} />
 
                     {/* Scale badge — lower-left corner, muted, 11 px */}
                     <Text
@@ -194,7 +204,7 @@ export default function BallBeam2D({
                         y={height - 34}
                         text={`1 m ≈ ${Math.round(pxPerM).toString()} px`}
                         fontSize={11}
-                        fill={COLOR_BADGE}
+                        fill={colors.badge}
                     />
 
                     {/* Exaggeration caption — lower-right corner */}
@@ -205,7 +215,7 @@ export default function BallBeam2D({
                         align="right"
                         text={t.ballBeam.tiltExaggerated}
                         fontSize={11}
-                        fill={COLOR_CAPTION}
+                        fill={colors.caption}
                     />
                 </Layer>
             </Stage>

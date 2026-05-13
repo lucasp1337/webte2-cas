@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { MoonIcon, SunIcon } from '@/Components/icons';
 import { useT } from '@/hooks/useT';
 import { cn } from '@/lib/cn';
 
@@ -59,30 +60,14 @@ export default function ThemeToggle({ className }: ThemeToggleProps) {
             aria-pressed={isDark}
             title={hydrated ? label : t.common.toggleTheme}
             className={cn(
-                'inline-flex h-9 w-9 items-center justify-center rounded-md text-on-surface',
-                'hover:bg-secondary',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+                'inline-flex h-[30px] w-[30px] items-center justify-center rounded border border-border',
+                'bg-surface-raised text-on-surface-muted transition-colors',
+                'hover:border-border-strong hover:text-on-surface',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
                 className,
             )}
         >
-            <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-            >
-                {isDark ? (
-                    <circle cx="12" cy="12" r="4" />
-                ) : (
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
-                    />
-                )}
-            </svg>
+            {isDark ? <SunIcon size={14} /> : <MoonIcon size={14} />}
         </button>
     );
 }

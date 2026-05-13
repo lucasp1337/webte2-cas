@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 
-import type { OctaveClient, OctaveExecutionOutcome, OctaveExecutionPayload } from '@/api/octave';
+import type { OctaveClient, OctaveExecutionOutcome, OctaveExecutionPayload, WorkspaceVariable } from '@/api/octave';
 
 // Inertia is not running inside jsdom; supply minimal stubs for the bits the
 // page (and its layout) reach for.
@@ -70,7 +70,7 @@ function makeClient(overrides: Partial<OctaveClient> = {}): OctaveClient {
                 }),
         ),
         clearSession: vi.fn((): Promise<boolean> => Promise.resolve(true)),
-        listVariables: vi.fn((): Promise<string[]> => Promise.resolve([])),
+        inspectWorkspace: vi.fn((): Promise<WorkspaceVariable[]> => Promise.resolve([])),
     };
 
     return { ...defaultClient, ...overrides };
@@ -95,7 +95,10 @@ describe('Console', () => {
                         httpStatus: 200,
                     }),
             ),
-            listVariables: vi.fn((): Promise<string[]> => Promise.resolve(['ans'])),
+            inspectWorkspace: vi.fn(
+                (): Promise<WorkspaceVariable[]> =>
+                    Promise.resolve([{ name: 'ans', size: '1x1', class: 'double', value: '2' }]),
+            ),
         });
 
         render(<Console apiKey="key" client={client} />);
@@ -109,7 +112,7 @@ describe('Console', () => {
         });
         // Variable sidebar refreshes after a successful run.
         await waitFor(() => {
-            expect(client.listVariables).toHaveBeenCalled();
+            expect(client.inspectWorkspace).toHaveBeenCalled();
         });
         expect(screen.getByTestId('variable-sidebar')).toHaveTextContent('ans');
     });

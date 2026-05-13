@@ -67,4 +67,45 @@ describe('Modal', () => {
 
         expect(onClose).toHaveBeenCalledOnce();
     });
+
+    it('does not call onClose when dialog content is clicked', async () => {
+        const user = userEvent.setup();
+        const onClose = vi.fn();
+        render(
+            <Modal open onClose={onClose} title="Confirm">
+                <p>Inner content</p>
+            </Modal>,
+        );
+
+        await user.click(screen.getByText('Inner content'));
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('has aria-labelledby pointing at the title element', () => {
+        render(
+            <Modal open onClose={() => undefined} title="Settings">
+                <p>body</p>
+            </Modal>,
+        );
+
+        const dialog = screen.getByRole('dialog');
+        const labelledBy = dialog.getAttribute('aria-labelledby');
+        expect(labelledBy).toBeTruthy();
+
+        const titleEl = document.getElementById(labelledBy as string);
+        expect(titleEl).not.toBeNull();
+        expect(titleEl?.textContent).toBe('Settings');
+    });
+
+    it('does not set aria-labelledby when no title is provided', () => {
+        render(
+            <Modal open onClose={() => undefined}>
+                <p>body</p>
+            </Modal>,
+        );
+
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).not.toHaveAttribute('aria-labelledby');
+    });
 });

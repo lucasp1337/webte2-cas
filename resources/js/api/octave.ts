@@ -53,6 +53,23 @@ export type OctaveClientOptions = {
     fetcher?: typeof fetch;
 };
 
+/**
+ * One entry from the `whos` workspace inspector. The `value` field is only
+ * populated for 1×1 scalars (double, int*, uint*, logical) via a follow-up
+ * `disp()` call; for all other shapes it is absent.
+ */
+export type WorkspaceVariable = {
+    name: string;
+    /** Raw size string from whos, e.g. "3x3", "1x1". */
+    size: string;
+    /** Octave class name, e.g. "double", "char", "cell". */
+    class: string;
+    /** Attribute flags from whos (complex 'c', persistent 'p', formal 'f'). Usually empty. */
+    attr?: string;
+    /** Formatted scalar value via disp(), only for 1×1 numeric/logical variables. */
+    value?: string;
+};
+
 function defaultPayload(): OctaveExecutionPayload {
     return {
         request_id: '',
@@ -125,15 +142,65 @@ export function createOctaveClient({ apiKey, fetcher }: OctaveClientOptions) {
         }
     }
 
-    async function listVariables(): Promise<string[]> {
-        const outcome = await runCommand('who');
-        if (outcome.status !== 'success' || outcome.payload === null) {
+    /**
+     * Classes whose 1×1 instances are safe to preview with disp().
+     * Excluded: char (may be multi-char), cell, struct, function_handle, etc.
+     */
+    const SCALAR_PREVIEWABLE_CLASSES = new Set([
+        'double',
+        'single',
+        'int8',
+        'int16',
+        'int32',
+        'int64',
+        'uint8',
+        'uint16',
+        'uint32',
+        'uint64',
+        'logical',
+        'complex',
+    ]);
+
+    async function inspectWorkspace(): Promise<WorkspaceVariable[]> {
+        const whosOutcome = await runCommand('whos');
+        if (whosOutcome.status !== 'success' || whosOutcome.payload === null) {
             return [];
         }
-        return parseWhoOutput(outcome.payload.stdout);
+        const vars = parseWhosOutput(whosOutcome.payload.stdout);
+        if (vars.length === 0) {
+            return [];
+        }
+
+        // Fetch values for scalar numeric/logical variables in parallel.
+        const scalars = vars.filter((v) => v.size === '1x1' && SCALAR_PREVIEWABLE_CLASSES.has(v.class));
+
+        if (scalars.length === 0) {
+            return vars;
+        }
+
+        const valueResults = await Promise.all(scalars.map((v) => runCommand(`disp(${v.name})`)));
+
+        const valueMap = new Map<string, string>();
+        scalars.forEach((v, i) => {
+            const outcome = valueResults[i];
+            if (outcome !== undefined && outcome.status === 'success' && outcome.payload !== null) {
+                const raw = outcome.payload.stdout.trim();
+                if (raw !== '') {
+                    valueMap.set(v.name, raw);
+                }
+            }
+        });
+
+        return vars.map((v) => {
+            const value = valueMap.get(v.name);
+            if (value !== undefined) {
+                return { ...v, value };
+            }
+            return v;
+        });
     }
 
-    return { runCommand, clearSession, listVariables };
+    return { runCommand, clearSession, inspectWorkspace };
 }
 
 export type OctaveClient = ReturnType<typeof createOctaveClient>;
@@ -157,6 +224,41 @@ export function parseExecutionPayload(value: unknown): OctaveExecutionPayload {
         duration_ms: typeof obj.duration_ms === 'number' ? obj.duration_ms : 0,
         rejection_reason: typeof obj.rejection_reason === 'string' ? obj.rejection_reason : null,
     };
+}
+
+/**
+ * Parses the stdout from `whos` into a structured list of workspace variables.
+ * Tolerates the header block, the dashed separator row, blank lines, and the
+ * trailing "Total is …" summary line. Lines that don't match the expected
+ * column shape are silently ignored rather than surfaced as errors.
+ *
+ * Expected table shape (columns separated by ≥1 whitespace):
+ *   [attr]  name  size  bytes  class
+ * where attr is optional (may be empty leading whitespace).
+ */
+export function parseWhosOutput(stdout: string): WorkspaceVariable[] {
+    const vars: WorkspaceVariable[] = [];
+    // Matches: optional leading attr token (letters only), variable name,
+    // size like "3x3" or "1x1", byte count (digits), and class name.
+    const ROW_RE = /^\s*([a-z]*)\s+([A-Za-z_]\w*)\s+(\d+x[\dx]+)\s+\d+\s+([A-Za-z_]\w*)\s*$/;
+    for (const line of stdout.split(/\r?\n/)) {
+        const match = ROW_RE.exec(line);
+        if (match === null) continue;
+        const [, attr, name, size, cls] = match;
+        // attr, name, size, cls are all captured groups — they are strings
+        // (possibly empty for attr). The non-null assertion is safe because
+        // ROW_RE has exactly 4 capture groups and exec() succeeded.
+        const entry: WorkspaceVariable = {
+            name: name!,
+            size: size!,
+            class: cls!,
+        };
+        if (attr !== undefined && attr !== '') {
+            entry.attr = attr;
+        }
+        vars.push(entry);
+    }
+    return vars;
 }
 
 /**
