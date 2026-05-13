@@ -6,8 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 // Re-run gate registration before each test so config changes take effect.
+// Mirrors HorizonServiceProvider::gate() so the assertions exercise the real
+// resolution logic without booting the full Horizon SPA in the test process.
 beforeEach(function (): void {
-    // Register the gate as the service provider does.
     Gate::define('viewHorizon', function (mixed $user = null) {
         if (app()->environment('local')) {
             return true;
@@ -20,14 +21,25 @@ beforeEach(function (): void {
             return false;
         }
 
-        $supplied = (string) (request()->query('token')
-            ?? request()->header('X-Horizon-Token', ''));
+        $request = request();
+        $session = $request->hasSession() ? $request->session() : null;
+        $sessionToken = $session !== null ? (string) $session->get('horizon_admin_token', '') : '';
+
+        $supplied = (string) ($request->query('token')
+            ?? $request->header('X-Horizon-Token')
+            ?? $sessionToken);
 
         if ($supplied === '') {
             return false;
         }
 
-        return hash_equals($expected, $supplied);
+        $ok = hash_equals($expected, $supplied);
+
+        if ($ok && $session !== null && $sessionToken !== $supplied) {
+            $session->put('horizon_admin_token', $supplied);
+        }
+
+        return $ok;
     });
 });
 
@@ -71,6 +83,32 @@ it('allows access in production env when a valid token is provided via X-Horizon
     config(['cas.horizon_admin_token' => $token]);
 
     $request = Request::create('/horizon', 'GET', [], [], [], ['HTTP_X_HORIZON_TOKEN' => $token]);
+    app()->instance('request', $request);
+
+    expect(Gate::check('viewHorizon', [null]))->toBeTrue();
+});
+
+it('persists the token in the session after a valid query-string handshake', function (): void {
+    app()->detectEnvironment(fn (): string => 'production');
+    $token = 'a-very-long-expected-token-value-64chars-padding-padding-pad12345';
+    config(['cas.horizon_admin_token' => $token]);
+
+    $request = Request::create('/horizon', 'GET', ['token' => $token]);
+    $request->setLaravelSession(app('session.store'));
+    app()->instance('request', $request);
+
+    expect(Gate::check('viewHorizon', [null]))->toBeTrue();
+    expect($request->session()->get('horizon_admin_token'))->toBe($token);
+});
+
+it('keeps allowing access when only the session token is present (no query, no header)', function (): void {
+    app()->detectEnvironment(fn (): string => 'production');
+    $token = 'a-very-long-expected-token-value-64chars-padding-padding-pad12345';
+    config(['cas.horizon_admin_token' => $token]);
+
+    $request = Request::create('/horizon/dashboard', 'GET');
+    $request->setLaravelSession(app('session.store'));
+    $request->session()->put('horizon_admin_token', $token);
     app()->instance('request', $request);
 
     expect(Gate::check('viewHorizon', [null]))->toBeTrue();

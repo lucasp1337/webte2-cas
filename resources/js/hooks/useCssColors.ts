@@ -17,11 +17,15 @@ export function useCssColors<K extends string>(tokens: Record<K, string>): Recor
     useEffect(() => {
         if (typeof document === 'undefined') return;
         const style = getComputedStyle(document.documentElement);
-        const next = {} as Record<K, string>;
+        const next: Record<K, string> = fallback(tokens);
+        // `Object.keys` widens to `string[]` even on Record<K, V>; the cast back
+        // to K[] is safe because tokens is the exact source of those keys.
         for (const key of Object.keys(tokens) as K[]) {
             const tokenName = tokens[key];
             const value = style.getPropertyValue(tokenName).trim();
-            next[key] = value === '' ? fallback(tokens)[key] : value;
+            if (value !== '') {
+                next[key] = value;
+            }
         }
         setResolved(next);
     }, [theme, tokens]);
@@ -30,7 +34,9 @@ export function useCssColors<K extends string>(tokens: Record<K, string>): Recor
 }
 
 function fallback<K extends string>(tokens: Record<K, string>): Record<K, string> {
-    const out = {} as Record<K, string>;
+    // Partial<Record<K, V>> starts empty and gets populated below; we widen at
+    // return after every key has been assigned.
+    const out: Partial<Record<K, string>> = {};
     for (const key of Object.keys(tokens) as K[]) out[key] = '#000000';
-    return out;
+    return out as Record<K, string>;
 }

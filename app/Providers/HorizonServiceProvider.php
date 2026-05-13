@@ -28,9 +28,11 @@ final class HorizonServiceProvider extends HorizonApplicationServiceProvider
      * In local environments Horizon is open without a token — mirrors the
      * behaviour of Horizon's own Authorize middleware which bypasses the gate
      * locally.  In every other environment the request must supply the
-     * HORIZON_ADMIN_TOKEN value either via the `token` query-string parameter
-     * or the `X-Horizon-Token` header.  Comparison is constant-time to prevent
-     * timing oracle attacks.
+     * HORIZON_ADMIN_TOKEN value via the `token` query-string parameter or the
+     * `X-Horizon-Token` header.  A successful match is persisted into the
+     * session so subsequent SPA navigations within Horizon (which lose the
+     * query string) keep working without a fresh handshake on every URL.
+     * Comparison is constant-time to prevent timing oracle attacks.
      */
     protected function gate(): void
     {
@@ -45,14 +47,26 @@ final class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 return false;
             }
 
-            $supplied = (string) (request()->query('token')
-                ?? request()->header('X-Horizon-Token', ''));
+            $request = request();
+
+            $session = $request->hasSession() ? $request->session() : null;
+            $sessionToken = $session !== null ? (string) $session->get('horizon_admin_token', '') : '';
+
+            $supplied = (string) ($request->query('token')
+                ?? $request->header('X-Horizon-Token')
+                ?? $sessionToken);
 
             if ($supplied === '') {
                 return false;
             }
 
-            return hash_equals($expected, $supplied);
+            $ok = hash_equals($expected, $supplied);
+
+            if ($ok && $session !== null && $sessionToken !== $supplied) {
+                $session->put('horizon_admin_token', $supplied);
+            }
+
+            return $ok;
         });
     }
 }
