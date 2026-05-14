@@ -42,7 +42,7 @@ final class ContentSecurityPolicyMiddleware
 
         // style-src: relax inline for both api-docs and console; also allow
         // Google Fonts stylesheet for api-docs.
-        $styleSrc = "style-src 'self' https://fonts.googleapis.com".(($isApiDocs || $isConsole) ? " 'unsafe-inline'" : '');
+        $styleSrc = "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com";
 
         $directives = [
             "default-src 'self'",
