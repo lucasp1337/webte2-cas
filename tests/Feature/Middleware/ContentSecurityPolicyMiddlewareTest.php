@@ -99,7 +99,7 @@ describe('ContentSecurityPolicyMiddleware', function (): void {
             expect($styleSrc)->toContain("'unsafe-inline'");
         });
 
-        it('does not allow unsafe-inline in script-src on the sk console route', function (): void {
+        it('allows unsafe-inline in script-src on the sk console route (theme detection inline script)', function (): void {
             $response = get('/sk/console');
 
             $response->assertStatus(200);
@@ -107,7 +107,7 @@ describe('ContentSecurityPolicyMiddleware', function (): void {
             preg_match('/script-src ([^;]+)/', $csp, $matches);
             $scriptSrc = $matches[1] ?? '';
 
-            expect($scriptSrc)->not->toContain("'unsafe-inline'");
+            expect($scriptSrc)->toContain("'unsafe-inline'");
         });
 
         it('allows unsafe-inline in style-src on the en console route', function (): void {
@@ -121,7 +121,7 @@ describe('ContentSecurityPolicyMiddleware', function (): void {
             expect($styleSrc)->toContain("'unsafe-inline'");
         });
 
-        it('does not allow unsafe-inline in script-src on the en console route', function (): void {
+        it('allows unsafe-inline in script-src on the en console route (theme detection inline script)', function (): void {
             $response = get('/en/console');
 
             $response->assertStatus(200);
@@ -129,7 +129,7 @@ describe('ContentSecurityPolicyMiddleware', function (): void {
             preg_match('/script-src ([^;]+)/', $csp, $matches);
             $scriptSrc = $matches[1] ?? '';
 
-            expect($scriptSrc)->not->toContain("'unsafe-inline'");
+            expect($scriptSrc)->toContain("'unsafe-inline'");
         });
     });
 });
