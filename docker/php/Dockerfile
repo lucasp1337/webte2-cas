@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      nodejs npm \
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
  && rm -rf /var/lib/apt/lists/*
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
@@ -95,6 +95,10 @@ WORKDIR /var/www/html
 
 # --- web target: PHP-FPM, served behind nginx ---
 FROM base AS web
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 EXPOSE 9000
 CMD ["php-fpm"]
 
