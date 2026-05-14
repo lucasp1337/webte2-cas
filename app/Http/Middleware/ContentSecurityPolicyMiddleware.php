@@ -38,7 +38,7 @@ final class ContentSecurityPolicyMiddleware
         $isConsole = $route === 'console';
 
         // script-src: relax inline only for api-docs (Swagger UI requirement).
-        $scriptSrc = "script-src 'self'".($isApiDocs ? " 'unsafe-inline'" : '');
+        $scriptSrc = "script-src 'self' 'unsafe-inline'".($isApiDocs ? '' : '');
 
         // style-src: relax inline for both api-docs and console; also allow
         // Google Fonts stylesheet for api-docs.
