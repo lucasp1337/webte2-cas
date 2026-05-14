@@ -36,13 +36,15 @@ final class ContentSecurityPolicyMiddleware
 
         $isApiDocs = $route === 'api-docs';
         $isConsole = $route === 'console';
+        $isWebPage = $route !== null && ! str_starts_with($request->path(), 'api/');
 
-        // script-src: relax inline only for api-docs (Swagger UI requirement).
-        $scriptSrc = "script-src 'self' 'unsafe-inline'".($isApiDocs ? '' : '');
+        // script-src: app.blade.php ships an inline theme-detection script on all
+        // web pages; unsafe-inline is required there. API endpoints stay strict.
+        $scriptSrc = "script-src 'self'".($isApiDocs || $isWebPage ? " 'unsafe-inline'" : '');
 
         // style-src: relax inline for both api-docs and console; also allow
         // Google Fonts stylesheet for api-docs.
-        $styleSrc = "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com";
+        $styleSrc = "style-src 'self' https://fonts.googleapis.com".(($isApiDocs || $isConsole || $isWebPage) ? " 'unsafe-inline'" : '');
 
         $directives = [
             "default-src 'self'",
