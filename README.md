@@ -321,8 +321,8 @@ kontajnerov, Samuel frontend, nasadenie a samostatné služby (Octave bridge,
   akcie, generovanie Octave skriptov a parsovanie výsledkov trajektórie.
 - **OpenAPI dokumentácia a asynchrónny PDF export** — generovanie špecifikácie,
   generovanie PDF cez frontu úloh.
-- **Záznamy (Logs) a CSV export — backend** — API endpointy, synchrónny aj
-  asynchrónny CSV export cez frontu úloh.
+- **Záznamy (Logs) — backend** — API endpoint na výpis requestov s filtrami
+  a stránkovaním.
 
 ### Samuel Brezoňák — backend služby, frontend a nasadenie
 
@@ -332,6 +332,9 @@ kontajnerov, Samuel frontend, nasadenie a samostatné služby (Octave bridge,
 - **Štatistiky — backend aj frontend** — anonymné sledovanie použitia riadené
   udalosťami, geolokácia IP adries (backend) a grafy/tabuľky štatistík
   (frontend).
+- **CSV export záznamov — backend** — synchrónny streamovaný export menších
+  datasetov a asynchrónny export veľkých datasetov cez frontu úloh
+  (`GenerateLargeCsvExportJob`) s poll endpointom na stiahnutie.
 - **Nasadenie na server** node30.webte.fei.stuba.sk — inštalácia a konfigurácia
   (Docker cez Snap, nginx reverzné proxy, logrotate, úpravy popísané v kapitole 8).
 - **Frontend základ** — nastavenie React + Inertia, dizajnový systém,
