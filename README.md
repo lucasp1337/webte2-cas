@@ -38,7 +38,6 @@ Nižšie je zoznam všetkého, čo používame.
 | dedoc/scramble | 0.13 | automatické generovanie OpenAPI špecifikácie z kontrolérov |
 | spatie/browsershot | 5 | generovanie PDF (renderuje HTML cez Chromium) |
 | spatie/laravel-data | — | typované DTO objekty na hraniciach systému |
-| geoip2/geoip2 | 3 | geolokácia IP adries pre štatistiky |
 
 ### Frontend (JavaScript)
 
@@ -76,7 +75,7 @@ limity (CPU, pamäť, počet procesov).
 
 - **Docker Compose** — celá aplikácia (6 kontajnerov, viď nižšie)
 - **nginx** — reverzné proxy pred PHP-FPM
-- **MaxMind GeoLite2-City** — offline databáza na geolokáciu (zabudovaná do image)
+- Na geolokáciu IP adries pre štatistiky používame bezplatnú službu **ip-api.com** (netreba žiadny API kľúč)
 
 ## 3. Štruktúra projektu
 
