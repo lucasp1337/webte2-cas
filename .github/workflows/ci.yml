@@ -47,11 +47,12 @@ jobs:
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
       REDIS_CLIENT: predis
-      # Unit/feature tests use the in-process array/sync drivers (also pinned
-      # in phpunit.xml) so `pest --parallel` workers don't share cache state.
+      # CACHE_STORE is array so parallel Pest workers don't share rate-limit
+      # buckets (phpunit.xml force-pins this too). Queue stays redis so
+      # ShouldQueue jobs defer instead of running inline during tests.
       CACHE_STORE: array
-      SESSION_DRIVER: array
-      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
     steps:
       - uses: actions/checkout@v4
 
