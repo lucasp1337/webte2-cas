@@ -14,6 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# The project is bind-mounted at /var/www/html and owned by the host user,
+# not the container user. Mark it as a safe directory so git (invoked by
+# composer, artisan, etc.) doesn't refuse with "detected dubious ownership".
+RUN git config --system --add safe.directory /var/www/html
+
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && rm -rf /var/lib/apt/lists/*
