@@ -54,7 +54,7 @@ it('filters by api_key_id', function (): void {
     expect($response->json('meta.total'))->toBe(3);
 });
 
-it('filters by route', function (): void {
+it('filters by a path fragment', function (): void {
     [$apiKey, $plaintext] = makeListApiKey('cccfilterr');
 
     RequestLog::factory()->count(2)->create([
@@ -68,7 +68,9 @@ it('filters by route', function (): void {
         'path' => '/api/v1/logs',
     ]);
 
-    $response = getJson('/api/v1/logs?route=v1.octave.exec', ['X-API-Key' => $plaintext]);
+    // The filter does a substring match on the request path, so a partial
+    // path the user types in the Logs page narrows the results.
+    $response = getJson('/api/v1/logs?route=octave/exec', ['X-API-Key' => $plaintext]);
 
     $response->assertStatus(200);
     expect($response->json('meta.total'))->toBe(2);
