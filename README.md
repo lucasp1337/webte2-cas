@@ -253,12 +253,18 @@ URL servera — inak prehliadač blokuje načítanie assetov (mixed content).
 
 ### 8.6 logrotate pre Laravel logy
 
-Vytvorili sme súbor `/etc/logrotate.d/laravel-webte2`, ktorý rotuje Laravel
+Adresár `storage/logs` nesmie byť group-writable, inak ho logrotate odmietne
+rotovať. Nastavíme mu práva `755`:
+
+```bash
+sudo docker compose exec web chmod 755 storage/logs
+```
+
+Potom vytvoríme súbor `/etc/logrotate.d/laravel-webte2`, ktorý rotuje Laravel
 logy denne a drží 7 dní histórie:
 
 ```
 /home/xbrezonak/webte2-cas/storage/logs/*.log {
-    su www-data www-data
     daily
     missingok
     rotate 7
@@ -269,18 +275,18 @@ logy denne a drží 7 dní histórie:
 }
 ```
 
-Dôležité — dve veci, ktoré musia sedieť spolu:
+Dôležité body:
 
-- `su www-data www-data` — logrotate rotuje pod používateľom `www-data`, čo je
-  vlastník logov aj adresára `storage/logs`. Bez tohto riadku logrotate odmietne
-  rotáciu, lebo adresár je group-writable (Laravel `storage` má práva `775`).
+- logrotate beží ako **root** (cez systémový cron) — root prejde cez domovský
+  adresár `/home/xbrezonak` (ten má práva `750`) aj cez bind-mount projektu.
+  Preto v configu **nie je** `su` direktíva.
+- `storage/logs` musí mať práva `755` (nie group-writable) — logrotate inak
+  rotáciu odmietne s chybou o "insecure permissions".
 - `copytruncate` — logrotate súbor skopíruje a pôvodný vyprázdni na mieste,
   takže `laravel.log` si zachová vlastníka `www-data`, pod ktorým beží PHP-FPM
-  v kontajneri.
-
-Keby logrotate namiesto `copytruncate` vytváral nový súbor (`create`), ten by
-patril používateľovi, ktorý spúšťa logrotate — a PHP-FPM by doň nedokázal
-zapisovať, čo by spôsobilo HTTP 500 na každej požiadavke zapisujúcej do logu.
+  v kontajneri. Keby logrotate namiesto toho vytváral nový súbor (`create`),
+  ten by patril inému používateľovi a PHP-FPM by doň nedokázal zapisovať —
+  výsledkom by bolo HTTP 500 na každej požiadavke zapisujúcej do logu.
 
 ### 8.7 Oprava `UserFactory` pre produkciu
 
