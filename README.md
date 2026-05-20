@@ -304,17 +304,16 @@ sudo docker compose exec web php artisan db:seed --force
 
 ## 9. Rozdelenie práce
 
-Na projekte sme pracovali dvaja. Prácu sme rozdelili podľa vrstiev — jeden
-robil backend, druhý frontend. Keďže väčšina funkcií má backendovú aj
-frontendovú časť, prakticky každú funkciu sme robili spoločne, len každý
-svoju vrstvu.
+Na projekte sme pracovali dvaja. Každý mal na starosti určité funkčné celky;
+keďže väčšina funkcií má backendovú aj frontendovú časť, na viacerých sme
+spolupracovali. Lucas robil prevažne Laravel backend a orchestráciu
+kontajnerov, Samuel frontend, nasadenie a samostatné služby (Octave bridge,
+štatistiky) — pričom obaja sme robili aj kus backendu.
 
 ### Lucas Palka — backend a infraštruktúra
 
 - **Docker Compose stack a Dockerfile** — návrh všetkých kontajnerov,
   multi-stage build, izolácia a limity kontajnerov.
-- **Python Octave bridge** — HTTP služba v aiohttp, ktorá spúšťa Octave
-  v izolovanom procese, sanitizácia príkazov, perzistencia pracovného priestoru.
 - **Backend základ** — autentifikácia cez API kľúče, logovanie všetkých
   požiadaviek, udalosti (events) a observery, rate limiting.
 - **Octave konzola — backend** — vykonanie príkazu cez bridge, správa session.
@@ -322,13 +321,17 @@ svoju vrstvu.
   akcie, generovanie Octave skriptov a parsovanie výsledkov trajektórie.
 - **OpenAPI dokumentácia a asynchrónny PDF export** — generovanie špecifikácie,
   generovanie PDF cez frontu úloh.
-- **Štatistiky — backend** — anonymné sledovanie použitia riadené udalosťami,
-  geolokácia IP adries.
 - **Záznamy (Logs) a CSV export — backend** — API endpointy, synchrónny aj
   asynchrónny CSV export cez frontu úloh.
 
-### Samuel Brezoňák — frontend a nasadenie
+### Samuel Brezoňák — backend služby, frontend a nasadenie
 
+- **Python Octave bridge — backend** — HTTP služba v aiohttp, ktorá spúšťa
+  Octave v izolovanom procese, sanitizácia príkazov, perzistencia pracovného
+  priestoru.
+- **Štatistiky — backend aj frontend** — anonymné sledovanie použitia riadené
+  udalosťami, geolokácia IP adries (backend) a grafy/tabuľky štatistík
+  (frontend).
 - **Nasadenie na server** node30.webte.fei.stuba.sk — inštalácia a konfigurácia
   (Docker cez Snap, nginx reverzné proxy, logrotate, úpravy popísané v kapitole 8).
 - **Frontend základ** — nastavenie React + Inertia, dizajnový systém,
@@ -337,8 +340,7 @@ svoju vrstvu.
   panel s premennými.
 - **Simulácie — frontend** — inverzné kyvadlo aj gulička na tyči: 2D animácie
   (Konva.js), grafy priebehu (Chart.js), formuláre na zadanie parametrov.
-- **Stránka záznamov a štatistík — frontend** — tabuľka requestov s filtrami
-  a stránkovaním, grafy a tabuľky štatistík.
-- **Swagger UI stránka** — zobrazenie OpenAPI dokumentácie v prehliadači.
+- **Stránka záznamov a Swagger UI — frontend** — tabuľka requestov s filtrami
+  a stránkovaním, zobrazenie OpenAPI dokumentácie v prehliadači.
 
 Všetky úlohy zo zadania boli dokončené.
