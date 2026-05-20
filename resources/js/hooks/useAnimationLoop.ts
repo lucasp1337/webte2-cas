@@ -4,6 +4,12 @@ type UseAnimationLoopOptions = {
     frameCount: number;
     stepSizeSeconds: number;
     slowdownFactor: number;
+    /**
+     * User-chosen playback multiplier (0.5 = half speed, 2 = double speed).
+     * Read live via a ref so changing it mid-playback is seamless. Defaults
+     * to 1 when omitted.
+     */
+    speedFactor?: number;
     isPlaying: boolean;
     onComplete?: () => void;
     /** Injectable clock for tests — defaults to `performance.now`. */
@@ -32,6 +38,7 @@ export function useAnimationLoop({
     frameCount,
     stepSizeSeconds,
     slowdownFactor,
+    speedFactor = 1,
     isPlaying,
     onComplete,
     now,
@@ -53,6 +60,9 @@ export function useAnimationLoop({
     const slowdownRef = useRef<number>(slowdownFactor);
     slowdownRef.current = slowdownFactor;
 
+    const speedRef = useRef<number>(speedFactor);
+    speedRef.current = speedFactor;
+
     const frameCountRef = useRef<number>(frameCount);
     frameCountRef.current = frameCount;
 
@@ -69,7 +79,9 @@ export function useAnimationLoop({
         const step = (wallNow: number): void => {
             const delta = (wallNow - lastWall) / 1000; // seconds of real time
             lastWall = wallNow;
-            simElapsed += delta / slowdownRef.current;
+            // speedFactor scales how much simulation time elapses per real
+            // second; slowdownFactor is the server-supplied baseline.
+            simElapsed += (delta * speedRef.current) / slowdownRef.current;
 
             const idx = Math.min(Math.floor(simElapsed / stepSizeRef.current), frameCountRef.current - 1);
             setCursorIndex(idx);

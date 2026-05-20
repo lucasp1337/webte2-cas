@@ -68,6 +68,8 @@ export default function Pendulum({ apiKey, slowdownFactor }: PendulumPageProps):
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [playerState, setPlayerState] = useState<PlayerState>('idle');
+    /** Playback-speed multiplier chosen via the player controls. */
+    const [speed, setSpeed] = useState<number>(1);
     /** Most recent validated parameters — needed for "Restart with new r". */
     const [lastParameters, setLastParameters] = useState<PendulumParameters | null>(null);
 
@@ -82,6 +84,7 @@ export default function Pendulum({ apiKey, slowdownFactor }: PendulumPageProps):
         frameCount,
         stepSizeSeconds: trajectory?.step_size ?? 0.02,
         slowdownFactor,
+        speedFactor: speed,
         isPlaying: playerState === 'playing',
         onComplete: () => {
             setPlayerState('finished');
@@ -278,11 +281,13 @@ export default function Pendulum({ apiKey, slowdownFactor }: PendulumPageProps):
                         frameIndex={cursorIndex}
                         frameCount={frameCount}
                         currentTimeSeconds={currentTimeSeconds}
+                        speed={speed}
                         onPlay={handlePlay}
                         onPause={handlePause}
                         onReset={handleReset}
                         onRestartWithNewR={handlePlayerRestartWithNewR}
                         onScrub={handleScrub}
+                        onSpeedChange={setSpeed}
                     />
 
                     {/* Chart card */}
