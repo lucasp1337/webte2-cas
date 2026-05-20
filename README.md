@@ -191,6 +191,12 @@ Docker sme inštalovali cez **Snap**, čo má dve dôležité obmedzenia (viď n
 Projekt je naklonovaný do domovského adresára používateľa, **nie** do
 `/var/www`, pretože snap Docker nemá prístup k `/var/www`:
 
+```bash
+git clone https://github.com/lucasp1337/webte2-cas.git ~/webte2-cas
+```
+
+Výsledné umiestnenie:
+
 ```
 /home/xbrezonak/webte2-cas/
 ```
