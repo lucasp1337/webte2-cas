@@ -258,6 +258,7 @@ logy denne a drží 7 dní histórie:
 
 ```
 /home/xbrezonak/webte2-cas/storage/logs/*.log {
+    su www-data www-data
     daily
     missingok
     rotate 7
@@ -268,12 +269,18 @@ logy denne a drží 7 dní histórie:
 }
 ```
 
-Dôležité: použili sme `copytruncate` (logrotate súbor skopíruje a pôvodný
-vyprázdni na mieste). Pôvodný `laravel.log` si tak zachová vlastníka
-`www-data`, pod ktorým beží PHP-FPM v kontajneri. Keby logrotate namiesto
-toho vytváral nový súbor (`create`), ten by patril používateľovi, ktorý
-spúšťa logrotate — a PHP-FPM by doň nedokázal zapisovať, čo by spôsobilo
-HTTP 500 na každej požiadavke zapisujúcej do logu.
+Dôležité — dve veci, ktoré musia sedieť spolu:
+
+- `su www-data www-data` — logrotate rotuje pod používateľom `www-data`, čo je
+  vlastník logov aj adresára `storage/logs`. Bez tohto riadku logrotate odmietne
+  rotáciu, lebo adresár je group-writable (Laravel `storage` má práva `775`).
+- `copytruncate` — logrotate súbor skopíruje a pôvodný vyprázdni na mieste,
+  takže `laravel.log` si zachová vlastníka `www-data`, pod ktorým beží PHP-FPM
+  v kontajneri.
+
+Keby logrotate namiesto `copytruncate` vytváral nový súbor (`create`), ten by
+patril používateľovi, ktorý spúšťa logrotate — a PHP-FPM by doň nedokázal
+zapisovať, čo by spôsobilo HTTP 500 na každej požiadavke zapisujúcej do logu.
 
 ### 8.7 Oprava `UserFactory` pre produkciu
 
