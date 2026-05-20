@@ -289,37 +289,41 @@ sudo docker compose exec web php artisan db:seed --force
 
 ## 9. Rozdelenie práce
 
-Na projekte sme pracovali dvaja. Prácu sme rozdelili podľa funkčných celkov,
-zhruba na polovicu.
+Na projekte sme pracovali dvaja. Prácu sme rozdelili podľa vrstiev — jeden
+robil backend, druhý frontend. Keďže väčšina funkcií má backendovú aj
+frontendovú časť, prakticky každú funkciu sme robili spoločne, len každý
+svoju vrstvu.
 
-### Samuel Brezoňák
+### Lucas Palka — backend a infraštruktúra
 
-- **Python Octave bridge** — HTTP služba v aiohttp, ktorá spúšťa Octave
-  v izolovanom procese, sanitizácia príkazov, perzistencia pracovného priestoru.
 - **Docker Compose stack a Dockerfile** — návrh všetkých kontajnerov,
   multi-stage build, izolácia a limity kontajnerov.
-- **Nasadenie na server** node30.webte.fei.stuba.sk — inštalácia a konfigurácia
-  (Docker cez Snap, nginx reverzné proxy, logrotate, úpravy popísané v kapitole 8).
-- **Octave konzola** — frontend (editor, pracovný priestor) aj backend
-  (vykonanie príkazu, správa session).
-- **Gulička na tyči** — simulácia, animácia a graf.
-
-### Lucas Palka
-
+- **Python Octave bridge** — HTTP služba v aiohttp, ktorá spúšťa Octave
+  v izolovanom procese, sanitizácia príkazov, perzistencia pracovného priestoru.
 - **Backend základ** — autentifikácia cez API kľúče, logovanie všetkých
   požiadaviek, udalosti (events) a observery, rate limiting.
-- **Inverzné kyvadlo** — simulácia, animácia a graf.
+- **Octave konzola — backend** — vykonanie príkazu cez bridge, správa session.
+- **Simulácie — backend** — inverzné kyvadlo aj gulička na tyči: kontroléry,
+  akcie, generovanie Octave skriptov a parsovanie výsledkov trajektórie.
+- **OpenAPI dokumentácia a asynchrónny PDF export** — generovanie špecifikácie,
+  generovanie PDF cez frontu úloh.
+- **Štatistiky — backend** — anonymné sledovanie použitia riadené udalosťami,
+  geolokácia IP adries.
+- **Záznamy (Logs) a CSV export — backend** — API endpointy, synchrónny aj
+  asynchrónny CSV export cez frontu úloh.
+
+### Samuel Brezoňák — frontend a nasadenie
+
+- **Nasadenie na server** node30.webte.fei.stuba.sk — inštalácia a konfigurácia
+  (Docker cez Snap, nginx reverzné proxy, logrotate, úpravy popísané v kapitole 8).
 - **Frontend základ** — nastavenie React + Inertia, dizajnový systém,
   dvojjazyčnosť (SK/EN), svetlý/tmavý režim, spoločné komponenty.
-- **OpenAPI dokumentácia a asynchrónny PDF export** — generovanie špecifikácie,
-  Swagger UI stránka, generovanie PDF cez frontu úloh.
-- **Štatistiky** — anonymné sledovanie použitia riadené udalosťami,
-  geolokácia IP adries.
-
-### Spoločná práca
-
-- **Stránka záznamov (Logs) a CSV export** — robili sme spoločne; stránka
-  s tabuľkou requestov, filtrovanie a stránkovanie (Lucas), synchrónny aj
-  asynchrónny CSV export cez frontu úloh (Samuel).
+- **Octave konzola — frontend** — editor kódu (CodeMirror), zobrazenie výstupu,
+  panel s premennými.
+- **Simulácie — frontend** — inverzné kyvadlo aj gulička na tyči: 2D animácie
+  (Konva.js), grafy priebehu (Chart.js), formuláre na zadanie parametrov.
+- **Stránka záznamov a štatistík — frontend** — tabuľka requestov s filtrami
+  a stránkovaním, grafy a tabuľky štatistík.
+- **Swagger UI stránka** — zobrazenie OpenAPI dokumentácie v prehliadači.
 
 Všetky úlohy zo zadania boli dokončené.
