@@ -110,11 +110,17 @@ final class RequestLog extends Model
     }
 
     /**
+     * Filter logs whose request path contains the given fragment.
+     *
+     * The Logs page filter lets the user type part of a URL path
+     * (e.g. `octave/exec`); a substring match on `path` is what makes that
+     * work — an exact match on the route name would never hit.
+     *
      * @param  Builder<static>  $q
      */
     public function scopeForRoute(Builder $q, string $route): void
     {
-        $q->where('route', $route);
+        $q->where('path', 'like', '%'.$route.'%');
     }
 
     /**
