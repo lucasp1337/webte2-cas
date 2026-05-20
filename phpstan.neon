@@ -10,7 +10,7 @@ parameters:
         - tests
     excludePaths:
         # HorizonServiceProvider uses Gate::define with a nullable User closure whose
-        # return type larastan cannot resolve at level max — revisit in Phase 10.
+        # return type larastan cannot resolve at level max.
         - app/Providers/HorizonServiceProvider.php
         # TelescopeServiceProvider uses Gate::define in a way that larastan flags at
         # level max; telescope is dev-only and will not be extended by the project.

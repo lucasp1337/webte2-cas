@@ -2,7 +2,7 @@
 Short description.
 
 ## Why
-Link to the phase doc and any issue.
+Context and any linked issue.
 
 ## How
 Notable design decisions, trade-offs.

@@ -266,45 +266,41 @@ PHP 8.5 features to use deliberately:
 
 ---
 
-## 10. Agent handoff protocol
+## 10. Working protocol
 
 This repo is built by multiple AI agents in parallel and sequence. Discipline matters.
 
-### Starting a phase
+### Starting a unit of work
 
 1. Read `CLAUDE.md` (this file).
-2. Read the relevant `docs/ARCHITECTURE.md` sections (each phase markdown lists which).
-3. Read `docs/phases/phase-XX-*.md` end to end.
-4. Pull the latest `main`, branch as `phase-XX/short-slug`.
-5. Walk the **Definition of Done** checklist before starting work. If anything is unclear, stop and ask the human running the agent.
+2. Pull the latest `main`, branch as `feat/short-slug` (or `fix/short-slug`).
+3. Walk the **Definition of Done** for the change before starting. If anything is unclear, stop and ask the human running the agent.
 
-### During the phase
+### During the work
 
 - One commit per logical unit. Conventional Commits subject (`feat(scope): ...`, `fix(scope): ...`).
 - Run quality gates after each unit. **Don't accumulate failures.**
-- If you discover the phase markdown is wrong (missing dep, contradictory requirement), stop and surface it. Do not invent a workaround silently.
+- If you discover a requirement is wrong (missing dep, contradiction), stop and surface it. Do not invent a workaround silently.
 
-### Finishing a phase
+### Finishing the work
 
 1. All quality gates green locally.
 2. Open a PR using the template (see §12).
-3. Confirm the **Hand-off** section of the phase markdown is satisfied — the next phase's prerequisites are in place.
-4. Tag the PR `phase:XX`.
+3. Confirm any downstream prerequisites are in place.
 
-### Cross-phase contracts
+### Cross-cutting contracts
 
-Phase markdowns reference shared types (`OctaveBridgeClient`, `SimulationTrajectory` DTO, `AnimationName` enum, `SimulationStarted` event). The earlier phase that introduces a contract is the source of truth. Later phases must not redefine; they import.
+Shared types (`OctaveBridgeClient`, `SimulationTrajectory` DTO, `AnimationName` enum, `SimulationStarted` event) have a single source of truth — the file that introduces a contract owns it. Other code must not redefine; it imports.
 
 ---
 
 ## 11. Git conventions
 
 - `main` is protected. PR required, CI required, no force-push, no deletions.
-- Branch naming: `phase-XX/short-slug`.
+- Branch naming: `feat/short-slug` or `fix/short-slug`.
 - Conventional Commits: `feat(scope): subject`, `fix(scope): subject`, `chore: subject`. Imperative, lowercase, no trailing period, ≤ 72 chars. **Each commit lands in `main` as-is** (see merge mode below), so subjects are part of the permanent log — write them like the changelog entry they will become.
-- **Merge mode: merge commit (`--no-ff`)**. Each phase PR becomes one merge commit on `main` with the branch's individual commits visible underneath. This trades linear history for granular insight into the work — desired because each phase ships ~20 logical units that document the sequence of decisions. Do NOT squash-merge.
-- One PR per phase by default. Sub-PRs allowed for very large phases (02, 06) — coordinate with the human.
-- Phases 00, 01, and 02 were squash-merged before this convention was set; their granular history is lost. Phases 03+ keep individual commits.
+- **Merge mode: merge commit (`--no-ff`)**. Each PR becomes one merge commit on `main` with the branch's individual commits visible underneath. This trades linear history for granular insight into the work. Do NOT squash-merge.
+- One PR per unit of work by default. Sub-PRs allowed for very large changes — coordinate with the human.
 
 ---
 
@@ -315,7 +311,7 @@ Phase markdowns reference shared types (`OctaveBridgeClient`, `SimulationTraject
 Short description.
 
 ## Why
-Link to the phase doc and any issue.
+Context and any linked issue.
 
 ## How
 Notable design decisions, trade-offs.
@@ -354,7 +350,7 @@ What could break, follow-ups required.
 - Tailwind `!important` (`!`) — fix the cascade properly.
 - Comments that restate the code instead of explaining intent.
 - Synchronous slow work in `web` that belongs in a queued job on `cli`.
-- Logic that should fire an event but is wired directly into a controller (Phase 09's `RecordAnimationUsage` is the canonical example — driven by listener, not by direct call).
+- Logic that should fire an event but is wired directly into a controller (`RecordAnimationUsage` is the canonical example — driven by listener, not by direct call).
 
 ---
 

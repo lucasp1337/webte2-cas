@@ -22,8 +22,8 @@ use Symfony\Component\HttpFoundation\Response;
  *    'unsafe-inline' is permitted on style-src only — script-src stays strict.
  *
  * Note: app.blade.php ships a tiny inline <script> for theme detection on every
- * page. Tightening script-src to nonces across all routes is tracked as a
- * post-submission follow-up (see phase-10 risks section).
+ * page. Tightening script-src to nonces across all routes is a known
+ * follow-up.
  */
 final class ContentSecurityPolicyMiddleware
 {

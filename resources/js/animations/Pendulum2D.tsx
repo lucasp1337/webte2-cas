@@ -1,6 +1,6 @@
-// TODO(phase-10): ship Pendulum3D variant under @/animations/Pendulum3D.tsx
-// using Three.js — the Pendulum2D and Pendulum3D renderers are interchangeable
-// via the AnimationRenderer<PendulumFrame> type; the page passes them as a prop.
+// Note: a Three.js Pendulum3D variant could live under @/animations/Pendulum3D.tsx
+// and drop in without page changes — the AnimationRenderer<PendulumFrame> type
+// makes the 2D and 3D renderers interchangeable; the page passes one as a prop.
 
 import { type ReactElement } from 'react';
 import { Circle, Layer, Line, Rect, Stage, Text } from 'react-konva';
@@ -51,7 +51,7 @@ type Pendulum2DProps = AnimationRendererProps<PendulumFrame> & {
     /**
      * Physical length of the pendulum rod in metres.
      * Pulled out of the generic AnimationRendererProps so the generic
-     * AnimationRenderer<TFrame> interface stays clean for phase-07 reuse.
+     * AnimationRenderer<TFrame> interface stays clean for reuse.
      */
     lengthMeters?: number;
 };
@@ -79,7 +79,7 @@ function EmptyStage({ width, height }: EmptyStageProps): ReactElement {
  * 2D Konva renderer for the inverted pendulum animation.
  *
  * Conforms to `AnimationRenderer<PendulumFrame>` so the page can swap in
- * Pendulum3D (phase 10) without changing its own state or loop logic.
+ * a 3D variant without changing its own state or loop logic.
  *
  * This is a pure component — it reads `frames[cursorIndex]` and renders.
  * It never owns the animation loop.

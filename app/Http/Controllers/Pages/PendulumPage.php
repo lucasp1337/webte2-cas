@@ -18,7 +18,7 @@ final class PendulumPage extends Controller
         // Slowdown factor: 1 = real-time, 2 = half speed, etc. Derived from
         // CAS_SLOWDOWN_MS by treating the bridge command-throttle as a
         // playback hint — every 500 ms of throttle slows simulation playback
-        // by 1×. Phase 10 may surface a dedicated env var if this proves coarse.
+        // by 1×. A dedicated env var could be surfaced later if this proves coarse.
         $slowdownMsRaw = config('cas.cas_slowdown_ms', 500);
         $slowdownMs = is_numeric($slowdownMsRaw) ? (int) $slowdownMsRaw : 500;
         $slowdownFactor = max(1, (int) round($slowdownMs / 500));

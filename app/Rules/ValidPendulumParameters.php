@@ -15,7 +15,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * identifies each offending field individually rather than producing a
  * generic "invalid parameters" rejection.
  *
- * Physical bounds (locked via phase-06-plan.md):
+ * Physical bounds:
  *   M   > 0     (cart mass)
  *   m   > 0     (pendulum mass)
  *   b   ≥ 0     (friction — can be frictionless)

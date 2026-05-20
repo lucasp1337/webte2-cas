@@ -6,7 +6,7 @@ export { SimulationApiError };
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror the backend ValidBallBeamParameters rule bounds exactly.
-// Bounds per phase-07-plan.md: m∈(0,100), R∈(0,1), J∈(0,1),
+// Bounds: m∈(0,100), R∈(0,1), J∈(0,1),
 // beam_length∈(0,10), gravity∈(0,30), duration_seconds∈(0,30], step_size∈[0.001,0.5].
 // ---------------------------------------------------------------------------
 

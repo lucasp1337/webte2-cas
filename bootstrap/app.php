@@ -56,9 +56,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Order matters: LogRequestMiddleware first so failed-auth requests
         // (rejected by ApiKeyMiddleware with 401) still produce a RequestLog
-        // row — phase 03 DoD requires "every call is logged". Session-stack
-        // middleware runs after auth so the per-browser console session
-        // cookie persists for the Octave console feature (Phase 05).
+        // row — every call must be logged. Session-stack middleware runs
+        // after auth so the per-browser console session cookie persists for
+        // the Octave console feature.
         $middleware->group('api-protected', [
             LogRequestMiddleware::class,
             ApiKeyMiddleware::class,
@@ -69,7 +69,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Extends api-protected with the anonymous-token cookie middleware
-        // needed by the simulation routes for phase-09 stats cooldown.
+        // needed by the simulation routes for stats cooldown.
         $middleware->group('api-simulation', [
             LogRequestMiddleware::class,
             ApiKeyMiddleware::class,

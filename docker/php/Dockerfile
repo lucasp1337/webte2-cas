@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # --- base: shared between web and cli ---
-# Using bookworm (Debian). php:8.5-fpm-bookworm is the stable fallback per phase-01 Risks.
+# Using bookworm (Debian). php:8.5-fpm-bookworm is the stable base image.
 # opcache is bundled in the base image; only docker-php-ext-enable is needed.
 FROM php:8.5-fpm-bookworm AS base
 
@@ -91,7 +91,7 @@ RUN --mount=type=secret,id=geolite_license_key \
 
 WORKDIR /var/www/html
 
-# Source is volume-mounted in dev (see docker-compose.yml); production image will COPY in a later phase.
+# Source is volume-mounted in dev (see docker-compose.yml); a production image would COPY it in.
 
 # --- web target: PHP-FPM, served behind nginx ---
 FROM base AS web
