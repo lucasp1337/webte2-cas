@@ -22,7 +22,6 @@ bootstrap/cache/*.php
 .env.*.local
 .claude/settings.local.json
 
-docs/phases/.work
 *.log
 *:Zone.Identifier
 

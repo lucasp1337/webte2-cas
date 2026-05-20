@@ -6,17 +6,23 @@ import { cn } from '@/lib/cn';
 
 export type PlayerState = 'idle' | 'playing' | 'paused' | 'finished';
 
+/** Selectable playback speeds, in multiples of real time. */
+const SPEEDS = [0.5, 1, 2] as const;
+
 type PlayerControlsProps = {
     state: PlayerState;
     hasTrajectory: boolean;
     frameIndex: number;
     frameCount: number;
     currentTimeSeconds: number;
+    /** Current playback-speed multiplier (0.5 / 1 / 2). */
+    speed: number;
     onPlay: () => void;
     onPause: () => void;
     onReset: () => void;
     onRestartWithNewR: () => void;
     onScrub: (index: number) => void;
+    onSpeedChange: (speed: number) => void;
 };
 
 /**
@@ -32,11 +38,13 @@ export default function PlayerControls({
     frameIndex,
     frameCount,
     currentTimeSeconds,
+    speed,
     onPlay,
     onPause,
     onReset,
     onRestartWithNewR,
     onScrub,
+    onSpeedChange,
 }: PlayerControlsProps): ReactElement {
     const t = useT();
 
@@ -87,6 +95,34 @@ export default function PlayerControls({
                 >
                     {isPlaying ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
                 </button>
+
+                {/* Speed selector — 0.5x / 1x / 2x */}
+                <div
+                    role="group"
+                    aria-label={t.pendulum.player.speed}
+                    className="inline-flex shrink-0 overflow-hidden rounded border border-border"
+                >
+                    {SPEEDS.map((s) => (
+                        <button
+                            key={s}
+                            type="button"
+                            disabled={!canInteract}
+                            aria-pressed={speed === s}
+                            onClick={() => {
+                                onSpeedChange(s);
+                            }}
+                            className={cn(
+                                'h-[30px] px-2 font-mono text-[11px] transition-colors',
+                                speed === s
+                                    ? 'bg-surface-sunken text-on-surface-strong'
+                                    : 'bg-surface-raised text-on-surface-muted hover:text-on-surface',
+                                'disabled:cursor-not-allowed disabled:opacity-40',
+                            )}
+                        >
+                            {s}&times;
+                        </button>
+                    ))}
+                </div>
 
                 {/* Scrub slider — fills remaining space */}
                 <input

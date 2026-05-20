@@ -13,8 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Ensures every simulation request carries a stable anonymous token cookie.
  *
  * The token is a UUID v4 stored in an HttpOnly, SameSite=Lax cookie valid for
- * one year. It is used by the phase-09 `RecordAnimationUsageListener` to
- * implement the cooldown deduplication logic without any user account.
+ * one year. It is used by the `RecordAnimationUsageListener` to implement
+ * the cooldown deduplication logic without any user account.
  *
  * The plain UUID is attached to `$request->attributes` so downstream code
  * (the action) can read it synchronously without re-parsing the cookie.

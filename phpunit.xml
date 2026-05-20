@@ -22,7 +22,15 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_STORE" value="array"/>
+        <!--
+            force="true" so the array cache wins even when the container or the
+            CI job injects a real CACHE_STORE env var. Tests must use the
+            in-process array cache: sharing one Redis instance across parallel
+            Pest workers makes cache-stateful tests (rate limiting) flaky.
+            QUEUE_CONNECTION stays non-forced so the CI's redis queue can defer
+            jobs that must not run inline during tests (e.g. PDF rendering).
+        -->
+        <env name="CACHE_STORE" value="array" force="true"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>

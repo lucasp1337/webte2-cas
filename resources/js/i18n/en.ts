@@ -149,6 +149,7 @@ export const en: Translation = {
             pause: 'Pause',
             replay: 'Replay',
             reset: 'Reset',
+            speed: 'Playback speed',
             restartWithNewR: 'Restart with new r',
             restartWithNewRHint: 'Continues from the last state with the current reference position',
             states: {

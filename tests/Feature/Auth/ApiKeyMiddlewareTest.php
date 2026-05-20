@@ -14,7 +14,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Register a minimal protected test route so middleware under test runs
-    // without depending on any real controllers shipping in a later phase.
+    // in isolation, without depending on any real controller.
     Route::middleware('api-protected')
         ->get('/_test/protected', fn () => response()->json(['ok' => true]))
         ->name('_test.protected');

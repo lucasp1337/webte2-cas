@@ -1,7 +1,7 @@
 """Octave bridge HTTP service.
 
-Phase 01 ships only `GET /health`. Phase 02 Stage A adds the error types,
-DTO, and middlewares. Stage C wires in the full handler set.
+Exposes the Octave execution endpoints, session management, and a health
+check, wired together with the error types, DTO, and middlewares.
 """
 
 from __future__ import annotations

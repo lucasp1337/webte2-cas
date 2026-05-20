@@ -147,6 +147,7 @@ const skSource = {
             pause: 'Pozastaviť',
             replay: 'Prehrať znova',
             reset: 'Resetovať',
+            speed: 'Rýchlosť prehrávania',
             restartWithNewR: 'Spustiť s novým r',
             restartWithNewRHint: 'Pokračuje od posledného stavu s aktuálnou referenčnou polohou',
             states: {

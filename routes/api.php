@@ -24,7 +24,7 @@ Route::get('/openapi.json', OpenApiSpecController::class)->name('openapi.spec');
 Route::get('/v1/health', HealthController::class)->name('v1.health');
 
 // Simulation routes extend api-protected with EnsureAnonTokenMiddleware so
-// the phase-09 stats listener has a stable anonymous token for cooldown.
+// the stats listener has a stable anonymous token for cooldown.
 Route::prefix('v1/simulations')->middleware('api-simulation')->group(function (): void {
     Route::post('/pendulum', RunPendulumSimulationController::class)->name('v1.simulations.pendulum');
     Route::post('/ball-beam', RunBallBeamSimulationController::class)->name('v1.simulations.ball-beam');

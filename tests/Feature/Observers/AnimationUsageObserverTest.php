@@ -3,33 +3,26 @@
 declare(strict_types=1);
 
 use App\Models\AnimationUsage;
-use App\Services\GeolocationService;
-use GeoIp2\Database\Reader;
-use GeoIp2\Model\City;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Mockery\Expectation;
-use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // Bind a fake GeolocationService that always returns a predictable result.
-    app()->bind(GeolocationService::class, function (): GeolocationService {
-        /** @var Reader&MockInterface $reader */
-        $reader = Mockery::mock(Reader::class);
-        $cityModel = new City([
-            'country' => ['iso_code' => 'DE', 'names' => ['en' => 'Germany']],
-            'city' => ['names' => ['en' => 'Berlin']],
-            'traits' => ['ip_address' => '8.8.8.8'],
-        ], ['en']);
-        /** @var Expectation $exp */
-        $exp = $reader->shouldReceive('city');
-        $exp->andReturn($cityModel);
+    Cache::flush();
 
-        return new GeolocationService($reader);
-    });
+    // Fake ip-api.com so the real GeolocationService maps a predictable result.
+    Http::fake([
+        'ip-api.com/*' => Http::response([
+            'status' => 'success',
+            'country' => 'Germany',
+            'countryCode' => 'DE',
+            'city' => 'Berlin',
+        ]),
+    ]);
 });
 
 describe('AnimationUsageObserver', function (): void {

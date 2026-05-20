@@ -15,7 +15,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * identifies each offending field individually rather than producing a
  * generic "invalid parameters" rejection.
  *
- * Physical bounds (locked via phase-07-plan.md):
+ * Physical bounds:
  *   ball_mass   ∈ (0, 100)   kg
  *   ball_radius ∈ (0, 1)     m
  *   inertia     ∈ (0, 1)     kg·m²

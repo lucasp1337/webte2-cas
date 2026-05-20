@@ -8,15 +8,12 @@ use App\Listeners\RecordAnimationUsageListener;
 use App\Models\AnimationUsage;
 use App\Services\GeolocationService;
 use Carbon\CarbonImmutable;
-use GeoIp2\Database\Reader;
-use GeoIp2\Model\City;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Mockery\Expectation;
-use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -32,27 +29,26 @@ function makeSimEvent(
 }
 
 /**
- * Returns a GeolocationService whose lookup always returns DE/Germany/Berlin.
+ * Returns a real GeolocationService; ip-api.com is HTTP-faked in beforeEach
+ * so lookups resolve to DE/Germany/Berlin.
  */
 function fakeGeoService(): GeolocationService
 {
-    /** @var Reader&MockInterface $reader */
-    $reader = Mockery::mock(Reader::class);
-    $cityModel = new City([
-        'country' => ['iso_code' => 'DE', 'names' => ['en' => 'Germany']],
-        'city' => ['names' => ['en' => 'Berlin']],
-        'traits' => ['ip_address' => '8.8.8.8'],
-    ], ['en']);
-    /** @var Expectation $exp */
-    $exp = $reader->shouldReceive('city');
-    $exp->andReturn($cityModel);
-
-    return new GeolocationService($reader);
+    return app(GeolocationService::class);
 }
 
 beforeEach(function (): void {
     Cache::flush();
     CarbonImmutable::setTestNow(CarbonImmutable::now());
+
+    Http::fake([
+        'ip-api.com/*' => Http::response([
+            'status' => 'success',
+            'country' => 'Germany',
+            'countryCode' => 'DE',
+            'city' => 'Berlin',
+        ]),
+    ]);
 });
 
 afterEach(function (): void {

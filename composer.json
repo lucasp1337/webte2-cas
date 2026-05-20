@@ -8,7 +8,6 @@
     "require": {
         "php": "^8.5",
         "dedoc/scramble": "^0.13.22",
-        "geoip2/geoip2": "^3.3",
         "inertiajs/inertia-laravel": "^3.1",
         "laravel/framework": "^13.7",
         "laravel/horizon": "^5.46",

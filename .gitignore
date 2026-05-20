@@ -20,7 +20,7 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Dependencies (placeholders for later phases)
+# Dependencies
 /vendor/
 /node_modules/
 /public/build/

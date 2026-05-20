@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  *
  * Steps:
  *  1. Dispatch `SimulationStarted` BEFORE the bridge call so that the stats
- *     listener (phase 09) fires even if the bridge subsequently fails.
+ *     listener fires even if the bridge subsequently fails.
  *  2. Render the Octave script from the Blade template.
  *  3. Execute via the bridge with the configured simulation timeout.
  *  4. Parse the stdout markers into a `SimulationTrajectory`.

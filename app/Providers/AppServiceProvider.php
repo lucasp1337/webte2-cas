@@ -18,10 +18,8 @@ use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
-use GeoIp2\Database\Reader;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -49,27 +47,6 @@ final class AppServiceProvider extends ServiceProvider
             $chromePath = config('cas.browsershot_chrome_path', '/usr/bin/chromium');
 
             return new BrowsershotPdfRenderer($chromePath);
-        });
-
-        $this->app->bind(Reader::class, function (): ?Reader {
-            $path = config('cas.geolite_db_path', '');
-
-            if (! is_string($path) || $path === '') {
-                return null;
-            }
-
-            if (! is_file($path)) {
-                if (app()->environment('production')) {
-                    Log::warning(
-                        'GeoLite2-City.mmdb missing at {path}; geolocation will return unknown for all lookups',
-                        ['path' => $path],
-                    );
-                }
-
-                return null;
-            }
-
-            return new Reader($path);
         });
     }
 
