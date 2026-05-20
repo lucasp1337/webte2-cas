@@ -257,21 +257,23 @@ Vytvorili sme súbor `/etc/logrotate.d/laravel-webte2`, ktorý rotuje Laravel
 logy denne a drží 7 dní histórie:
 
 ```
-/home/xbrezonak/webte2-cas/storage/logs/laravel.log {
-    su xbrezonak xbrezonak
+/home/xbrezonak/webte2-cas/storage/logs/*.log {
     daily
     missingok
     rotate 7
     compress
     delaycompress
     notifempty
-    create 0664 www-data www-data
+    copytruncate
 }
 ```
 
-Dôležité: nový log súbor musí vlastniť `www-data` (nie `xbrezonak`), pretože
-PHP-FPM beží vnútri kontajnera ako `www-data`. Pri nesprávnom vlastníctve
-vracia aplikácia HTTP 500 na každej požiadavke, ktorá zapisuje do logu.
+Dôležité: použili sme `copytruncate` (logrotate súbor skopíruje a pôvodný
+vyprázdni na mieste). Pôvodný `laravel.log` si tak zachová vlastníka
+`www-data`, pod ktorým beží PHP-FPM v kontajneri. Keby logrotate namiesto
+toho vytváral nový súbor (`create`), ten by patril používateľovi, ktorý
+spúšťa logrotate — a PHP-FPM by doň nedokázal zapisovať, čo by spôsobilo
+HTTP 500 na každej požiadavke zapisujúcej do logu.
 
 ### 8.7 Oprava `UserFactory` pre produkciu
 
