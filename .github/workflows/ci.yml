@@ -47,9 +47,11 @@ jobs:
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
       REDIS_CLIENT: predis
-      CACHE_STORE: redis
-      SESSION_DRIVER: redis
-      QUEUE_CONNECTION: redis
+      # Unit/feature tests use the in-process array/sync drivers (also pinned
+      # in phpunit.xml) so `pest --parallel` workers don't share cache state.
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
     steps:
       - uses: actions/checkout@v4
 
